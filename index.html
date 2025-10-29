@@ -1,124 +1,145 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
+  <title>Ramallah Waste Containers - Enhanced Map</title>
 
-  <!-- Give the page a title -->
-  <title>Ramallah Waste Containers</title>
-
-  <!-- Add a link to the Leaflet CSS library so you can reference it for styling your map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
-
-  <!-- All the CSS code goes inside the style tags below -->
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    /* style the body */
     body {
-      margin: 0px;
+      margin: 0;
       height: 100%;
       width: 100%;
     }
-
-    /* style the map */
     #map {
       position: absolute;
       width: 100%;
-      top: 0px;
-      bottom: 0;
+      height: 100%;
+    }
+    .info {
+      background: rgba(255, 255, 255, 0.8);
+      padding: 6px 8px;
+      font: 14px/16px Arial, Helvetica, sans-serif;
+      border-radius: 5px;
     }
   </style>
 </head>
-
 <body>
-  <!-- the map -->
   <div id="map"></div>
 
-  <!-- Add a link to the Leaflet JavaScript library so you can reference it for building your map -->
-  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
-
-  <!-- Add a link to the jQuery JavaScript library so you can leverage ajax methods to load your data -->
+  <!-- Libraries -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 
-  <!-- All JavaScript goes inside the script tags below -->
   <script>
-    // define map options
-    const mapOptions = {
-      zoomSnap: 0.5,  // this allows fractional zooming
-      center: [31.9045, 35.2045], // center the map on the coordinates for Ramallah
-      zoom: 17.5, // set the initial zoom
+    // إعداد الخريطة
+    const map = L.map("map", {
+      center: [31.9045, 35.2045],
+      zoom: 15
+    });
+
+    // طبقات الخلفية
+    const baseLayers = {
+      "خريطة داكنة": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap & CARTO'
+      }),
+      "خريطة الشوارع": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }),
+      "أقمار صناعية": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri & OpenStreetMap contributors'
+      })
     };
 
-    // define the map with the options above
-    const map = L.map("map", mapOptions);
+    baseLayers["خريطة داكنة"].addTo(map); // الافتراضية
 
-// add a base map to the map
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains: 'abcd',
-  maxZoom: 20
-}).addTo(map);
+    let wasteContainersLayer, zonesLayer;
 
-
-// use jquery to load GeoJSON data	
-
-
-
+    // تحميل بيانات الحاويات
     $.getJSON("wasteContainer.json", function(WC) {
-      L.geoJson(WC, {
+      wasteContainersLayer = L.geoJson(WC, {
         pointToLayer: function(feature, latlng) {
+          const color =
+            feature.properties.TYPE_OF_WA === "Iron" ? "red" :
+            feature.properties.TYPE_OF_WA === "Plastic" ? "blue" :
+            "green";
           return L.circleMarker(latlng, {
-            radius: 5,
-            fillColor: "red",
-            color: "black",
-            weight: 0.5,
+            radius: 6,
+            fillColor: color,
+            color: "white",
+            weight: 1,
             opacity: 1,
             fillOpacity: 0.8
           });
         },
         onEachFeature: function(feature, layer) {
-          layer.on('click', function(e) {
-            alert("WA: " + feature.properties.TYPE_OF_WA);
-          });
+          layer.bindPopup(`
+            <b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
+            <b>الرمز:</b> ${feature.properties.ID || "N/A"}
+          `);
         }
-      }).addTo(map);
+      });
+      wasteContainersLayer.addTo(map);
     });
-   $.getJSON("RamallahZones.json", function(RZ) {
-      L.geoJson(RZ, {
-        style: function(feature) {
-          return {
-            fillColor: "gray",
-            fillOpacity: 0.3,
-            color: "black",
-            weight: 2.0,
-            opacity: 0.7
-          };
+
+    // تحميل بيانات المناطق
+    $.getJSON("RamallahZones.json", function(RZ) {
+      zonesLayer = L.geoJson(RZ, {
+        style: {
+          fillColor: "gray",
+          fillOpacity: 0.2,
+          color: "black",
+          weight: 1
         },
         onEachFeature: function(feature, layer) {
           layer.on('click', function(e) {
-            alert("Zone Name: " + feature.properties.NAME);
+            // حساب عدد الحاويات داخل المنطقة
+            if (!wasteContainersLayer) return;
+            const zone = feature;
+            let count = 0;
+            wasteContainersLayer.eachLayer(function(container) {
+              const point = turf.point([container.getLatLng().lng, container.getLatLng().lat]);
+              if (turf.booleanPointInPolygon(point, zone)) count++;
+            });
+            layer.bindPopup(`<b>المنطقة:</b> ${feature.properties.NAME}<br>
+                             <b>عدد الحاويات:</b> ${count}`).openPopup();
           });
         }
-      }).addTo(map);
+      });
+      zonesLayer.addTo(map);
     });
 
-    // Add layers to map with control options
-    const baseLayers = {};
+    // التحكم بالطبقات
     const overlays = {
-      "Zones": zonesLayer,
-      "Waste Containers": wasteContainersLayer
+      "مناطق رام الله": zonesLayer,
+      "حاويات النفايات": wasteContainersLayer
     };
 
-    // Add layer control to the map
-    L.control.layers(baseLayers, overlays).addTo(map);
+    L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-    // Add both layers to the map by default
-    zonesLayer.addTo(map);
-    wasteContainersLayer.addTo(map);
+    // عرض الإحداثيات في الأسفل
+    const info = L.control({ position: 'bottomleft' });
+    info.onAdd = function(map) {
+      this._div = L.DomUtil.create('div', 'info');
+      this.update();
+      return this._div;
+    };
+    info.update = function(latlng) {
+      this._div.innerHTML = latlng
+        ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}`
+        : "حرّك الماوس على الخريطة";
+    };
+    info.addTo(map);
+    map.on('mousemove', function(e) {
+      info.update(e.latlng);
+    });
   </script>
 </body>
-
 </html>
+
+
 
 
 
