@@ -160,5 +160,38 @@
     }
 
     // التحكم بالطبقات
+    const overlays = { "مناطق رام الله": zonesLayer, "حاويات النفايات": wasteContainersLayer };
+    L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
+    // عرض الإحداثيات في الأسفل
+    const info = L.control({ position: 'bottomleft' });
+    info.onAdd = function() {
+      this._div = L.DomUtil.create('div', 'info');
+      this.update();
+      return this._div;
+    };
+    info.update = function(latlng) {
+      this._div.innerHTML = latlng ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}` : "حرّك الماوس على الخريطة";
+    };
+    info.addTo(map);
+    map.on('mousemove', function(e) { info.update(e.latlng); });
 
+    // مقياس المسافة
+    L.control.scale({ metric: true, imperial: false }).addTo(map);
+
+    // البحث عن المنطقة
+    $('#searchZone').on('keyup', function() {
+      const query = $(this).val().toLowerCase();
+      if (!zonesLayer) return;
+      zonesLayer.eachLayer(function(layer) {
+        if(layer.feature.properties.NAME.toLowerCase().includes(query)) {
+          map.fitBounds(layer.getBounds());
+          layer.setStyle({ fillOpacity: 0.7 });
+        } else {
+          layer.setStyle({ fillOpacity: 0.5 });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
