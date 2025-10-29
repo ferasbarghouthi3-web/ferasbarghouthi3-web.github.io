@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ramallah Map with Roads and Waste Containers</title>
+  <title>Ramallah Waste Containers - Enhanced Map</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -52,13 +52,12 @@
         attribution: '&copy; Esri & OpenStreetMap contributors'
       })
     };
+
     baseLayers["خريطة داكنة"].addTo(map); // الافتراضية
 
-    let wasteContainersLayer, zonesLayer, rodsLayer;
+    let wasteContainersLayer, zonesLayer;
 
-    // =========================
     // تحميل بيانات الحاويات
-    // =========================
     $.getJSON("wasteContainer.json", function(WC) {
       wasteContainersLayer = L.geoJson(WC, {
         pointToLayer: function(feature, latlng) {
@@ -85,9 +84,7 @@
       wasteContainersLayer.addTo(map);
     });
 
-    // =========================
     // تحميل بيانات المناطق
-    // =========================
     $.getJSON("RamallahZones.json", function(RZ) {
       zonesLayer = L.geoJson(RZ, {
         style: {
@@ -98,6 +95,7 @@
         },
         onEachFeature: function(feature, layer) {
           layer.on('click', function(e) {
+            // حساب عدد الحاويات داخل المنطقة
             if (!wasteContainersLayer) return;
             const zone = feature;
             let count = 0;
@@ -113,49 +111,15 @@
       zonesLayer.addTo(map);
     });
 
-    // =========================
-    // تحميل بيانات الطرق (rods.json)
-    // =========================
-    fetch('rods.json')
-      .then(response => response.json())
-      .then(data => {
-        rodsLayer = L.geoJSON(data, {
-          style: function(feature) {
-            switch (feature.properties.Type) {
-              case 'Highway': return { color: 'red, weight: 3 };
-              case 'Main': return { color: 'gray', weight: 2 };
-              case 'Rural': return { color: '#red', weight: 2 };
-              case 'Local': return { color: '#yelow', weight: 2 };
-              case 'Internal': return { color: 'blue', weight: 2 };
-              case 'Dirt': return { color: 'brown', weight: 2, dashArray: '5,5' };
-              default: return { color: '#333333', weight: 2 };
-            }
-          },
-          onEachFeature: function(feature, layer) {
-            layer.bindPopup(
-              `<b>Type:</b> ${feature.properties.Type}<br>` +
-              `<b>Length:</b> ${feature.properties.Lenght.toFixed(3)} km`
-            );
-          }
-        });
-        rodsLayer.addTo(map);
-        map.fitBounds(rodsLayer.getBounds());
-      })
-      .catch(error => console.error('Error loading rods.json:', error));
-
-    // =========================
     // التحكم بالطبقات
-    // =========================
     const overlays = {
       "مناطق رام الله": zonesLayer,
-      "حاويات النفايات": wasteContainersLayer,
-      "الطرق": rodsLayer
+      "حاويات النفايات": wasteContainersLayer
     };
+
     L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-    // =========================
     // عرض الإحداثيات في الأسفل
-    // =========================
     const info = L.control({ position: 'bottomleft' });
     info.onAdd = function(map) {
       this._div = L.DomUtil.create('div', 'info');
@@ -174,6 +138,7 @@
   </script>
 </body>
 </html>
+
 
 
 
