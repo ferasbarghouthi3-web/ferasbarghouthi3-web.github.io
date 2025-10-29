@@ -23,10 +23,42 @@
       font: 14px/16px Arial, Helvetica, sans-serif;
       border-radius: 5px;
     }
+    .filter-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.8);
+      padding: 5px;
+      border-radius: 5px;
+    }
+    .filter-box button {
+      margin: 2px;
+    }
+    #searchZone {
+      position: absolute;
+      top: 70px;
+      left: 10px;
+      z-index: 1000;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+
+  <!-- فلتر الحاويات -->
+  <div class="filter-box">
+    <button onclick="filterContainers('all')">الكل</button>
+    <button onclick="filterContainers('Iron')">حديد</button>
+    <button onclick="filterContainers('Plastic')">بلاستيك</button>
+    <button onclick="filterContainers('Glass')">زجاج</button>
+  </div>
+
+  <!-- صندوق البحث -->
+  <input type="text" id="searchZone" placeholder="ابحث عن المنطقة">
 
   <!-- Libraries -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -34,107 +66,99 @@
   <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 
   <script>
-    // إعداد الخريطة
-    const map = L.map("map", {
-      center: [31.9045, 35.2045],
-      zoom: 15
-    });
+    const map = L.map("map", { center: [31.9045, 35.2045], zoom: 15 });
 
     // طبقات الخلفية
     const baseLayers = {
-      "خريطة داكنة": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap & CARTO'
-      }),
-      "خريطة الشوارع": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-      }),
-      "أقمار صناعية": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '&copy; Esri & OpenStreetMap contributors'
-      })
+      "خريطة داكنة": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO' }),
+      "خريطة الشوارع": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
+      "أقمار صناعية": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri & OpenStreetMap contributors' })
     };
+    baseLayers["خريطة داكنة"].addTo(map);
 
-    baseLayers["خريطة داكنة"].addTo(map); // الافتراضية
-
-    let wasteContainersLayer, zonesLayer;
+    let wasteContainersLayer, zonesLayer, containerData;
 
     // تحميل بيانات الحاويات
     $.getJSON("wasteContainer.json", function(WC) {
+      containerData = WC;
       wasteContainersLayer = L.geoJson(WC, {
-        pointToLayer: function(feature, latlng) {
-          const color =
-            feature.properties.TYPE_OF_WA === "Iron" ? "red" :
-            feature.properties.TYPE_OF_WA === "Plastic" ? "blue" :
-            "green";
-          return L.circleMarker(latlng, {
-            radius: 6,
-            fillColor: color,
-            color: "white",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-          });
-        },
-        onEachFeature: function(feature, layer) {
-          layer.bindPopup(`
-            <b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
-            <b>الرمز:</b> ${feature.properties.ID || "N/A"}
-          `);
-        }
-      });
-      wasteContainersLayer.addTo(map);
+        pointToLayer: pointToLayerFunction,
+        onEachFeature: onEachContainer
+      }).addTo(map);
     });
+
+    function pointToLayerFunction(feature, latlng) {
+      const color = feature.properties.TYPE_OF_WA === "Iron" ? "red" :
+                    feature.properties.TYPE_OF_WA === "Plastic" ? "blue" :
+                    "green";
+      const marker = L.circleMarker(latlng, { radius: 6, fillColor: color, color: "white", weight: 1, opacity: 1, fillOpacity: 0.8 });
+      marker.on('mouseover', function() { this.setStyle({ radius: 10, weight: 2 }); });
+      marker.on('mouseout', function() { this.setStyle({ radius: 6, weight: 1 }); });
+      return marker;
+    }
+
+    function onEachContainer(feature, layer) {
+      layer.bindPopup(`<b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
+                       <b>الرمز:</b> ${feature.properties.ID || "N/A"}`);
+    }
+
+    function filterContainers(type) {
+      if (!containerData) return;
+      if (wasteContainersLayer) map.removeLayer(wasteContainersLayer);
+      wasteContainersLayer = L.geoJson(containerData, {
+        filter: function(f) { return type === "all" || f.properties.TYPE_OF_WA === type; },
+        pointToLayer: pointToLayerFunction,
+        onEachFeature: onEachContainer
+      }).addTo(map);
+      updateZoneColors();
+    }
 
     // تحميل بيانات المناطق
     $.getJSON("RamallahZones.json", function(RZ) {
       zonesLayer = L.geoJson(RZ, {
-        style: {
-          fillColor: "gray",
-          fillOpacity: 0.2,
-          color: "black",
-          weight: 1
-        },
+        style: styleZone,
         onEachFeature: function(feature, layer) {
-          layer.on('click', function(e) {
-            // حساب عدد الحاويات داخل المنطقة
-            if (!wasteContainersLayer) return;
-            const zone = feature;
-            let count = 0;
-            wasteContainersLayer.eachLayer(function(container) {
-              const point = turf.point([container.getLatLng().lng, container.getLatLng().lat]);
-              if (turf.booleanPointInPolygon(point, zone)) count++;
-            });
-            layer.bindPopup(`<b>المنطقة:</b> ${feature.properties.NAME}<br>
-                             <b>عدد الحاويات:</b> ${count}`).openPopup();
-          });
+          layer.on('click', function() { showZoneInfo(layer, feature); });
         }
-      });
-      zonesLayer.addTo(map);
+      }).addTo(map);
     });
+
+    function getZoneColor(count) {
+      return count > 20 ? '#800026' :
+             count > 10 ? '#BD0026' :
+             count > 5  ? '#E31A1C' :
+                          '#FFEDA0';
+    }
+
+    function styleZone(feature) {
+      let count = 0;
+      if (wasteContainersLayer) {
+        wasteContainersLayer.eachLayer(function(container) {
+          const point = turf.point([container.getLatLng().lng, container.getLatLng().lat]);
+          if (turf.booleanPointInPolygon(point, feature)) count++;
+        });
+      }
+      return { fillColor: getZoneColor(count), fillOpacity: 0.5, color: "black", weight: 1 };
+    }
+
+    function showZoneInfo(layer, feature) {
+      if (!wasteContainersLayer) return;
+      let count = 0;
+      wasteContainersLayer.eachLayer(function(container) {
+        const point = turf.point([container.getLatLng().lng, container.getLatLng().lat]);
+        if (turf.booleanPointInPolygon(point, feature)) count++;
+      });
+      layer.bindPopup(`<b>المنطقة:</b> ${feature.properties.NAME}<br>
+                       <b>عدد الحاويات:</b> ${count}`).openPopup();
+    }
+
+    function updateZoneColors() {
+      if (!zonesLayer) return;
+      zonesLayer.eachLayer(function(layer) {
+        layer.setStyle(styleZone(layer.feature));
+      });
+    }
 
     // التحكم بالطبقات
-    const overlays = {
-      "مناطق رام الله": zonesLayer,
-      "حاويات النفايات": wasteContainersLayer
-    };
 
-    L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-    // عرض الإحداثيات في الأسفل
-    const info = L.control({ position: 'bottomleft' });
-    info.onAdd = function(map) {
-      this._div = L.DomUtil.create('div', 'info');
-      this.update();
-      return this._div;
-    };
-    info.update = function(latlng) {
-      this._div.innerHTML = latlng
-        ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}`
-        : "حرّك الماوس على الخريطة";
-    };
-    info.addTo(map);
-    map.on('mousemove', function(e) {
-      info.update(e.latlng);
-    });
-  </script>
-</body>
-</html>
