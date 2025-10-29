@@ -76,8 +76,8 @@
         },
         onEachFeature: function(feature, layer) {
           layer.bindPopup(`
-            <b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "iron"}<br>
-            <b>الرمز:</b> ${feature.properties.ID || "iron"}
+            <b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
+            <b>الرمز:</b> ${feature.properties.ID || "N/A"}
           `);
         }
       });
@@ -138,6 +138,7 @@
   </script>
 </body>
 </html>
+
 
 
 
