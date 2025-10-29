@@ -7,43 +7,12 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    body {
-      margin: 0;
-      height: 100%;
-      width: 100%;
-    }
-    #map {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-    }
-    .info {
-      background: rgba(255, 255, 255, 0.8);
-      padding: 6px 8px;
-      font: 14px/16px Arial, Helvetica, sans-serif;
-      border-radius: 5px;
-    }
-    .filter-box {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.8);
-      padding: 5px;
-      border-radius: 5px;
-    }
-    .filter-box button {
-      margin: 2px;
-    }
-    #searchZone {
-      position: absolute;
-      top: 70px;
-      left: 10px;
-      z-index: 1000;
-      padding: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
+    body { margin: 0; height: 100%; width: 100%; }
+    #map { position: absolute; width: 100%; height: 100%; }
+    .info { background: rgba(255,255,255,0.8); padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; border-radius: 5px; }
+    .filter-box { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px; }
+    .filter-box button { margin: 2px; }
+    #searchZone { position: absolute; top: 70px; left: 10px; z-index: 1000; padding: 5px; border-radius: 5px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
@@ -68,6 +37,12 @@
   <script>
     const map = L.map("map", { center: [31.9045, 35.2045], zoom: 15 });
 
+    // إنشاء panes لتحديد ترتيب الطبقات
+    map.createPane('zonesPane');
+    map.getPane('zonesPane').style.zIndex = 400; // تحت الحاويات
+    map.createPane('containersPane');
+    map.getPane('containersPane').style.zIndex = 500; // فوق المناطق
+
     // طبقات الخلفية
     const baseLayers = {
       "خريطة داكنة": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO' }),
@@ -78,6 +53,17 @@
 
     let wasteContainersLayer, zonesLayer, containerData;
 
+    // تحميل بيانات المناطق
+    $.getJSON("RamallahZones.json", function(RZ) {
+      zonesLayer = L.geoJson(RZ, {
+        style: styleZone,
+        pane: 'zonesPane',
+        onEachFeature: function(feature, layer) {
+          layer.on('click', function() { showZoneInfo(layer, feature); });
+        }
+      }).addTo(map);
+    });
+
     // تحميل بيانات الحاويات
     $.getJSON("wasteContainer.json", function(WC) {
       containerData = WC;
@@ -87,11 +73,15 @@
       }).addTo(map);
     });
 
+    // دوال الحاويات
     function pointToLayerFunction(feature, latlng) {
       const color = feature.properties.TYPE_OF_WA === "Iron" ? "red" :
                     feature.properties.TYPE_OF_WA === "Plastic" ? "blue" :
                     "green";
-      const marker = L.circleMarker(latlng, { radius: 6, fillColor: color, color: "white", weight: 1, opacity: 1, fillOpacity: 0.8 });
+      const marker = L.circleMarker(latlng, { 
+        radius: 6, fillColor: color, color: "white", weight: 1, opacity: 1, fillOpacity: 0.8,
+        pane: 'containersPane' // التأكد أن النقاط فوق المناطق
+      });
       marker.on('mouseover', function() { this.setStyle({ radius: 10, weight: 2 }); });
       marker.on('mouseout', function() { this.setStyle({ radius: 6, weight: 1 }); });
       return marker;
@@ -113,20 +103,11 @@
       updateZoneColors();
     }
 
-    // تحميل بيانات المناطق
-    $.getJSON("RamallahZones.json", function(RZ) {
-      zonesLayer = L.geoJson(RZ, {
-        style: styleZone,
-        onEachFeature: function(feature, layer) {
-          layer.on('click', function() { showZoneInfo(layer, feature); });
-        }
-      }).addTo(map);
-    });
-
+    // دوال المناطق
     function getZoneColor(count) {
-      return count > 20 ? '#800026' :
-             count > 10 ? '#BD0026' :
-             count > 5  ? '#E31A1C' :
+      return count > 500 ? 'red' :
+             count > 200 ? 'yelow' :
+             count > 4  ? 'green' :
                           '#FFEDA0';
     }
 
@@ -163,16 +144,10 @@
     const overlays = { "مناطق رام الله": zonesLayer, "حاويات النفايات": wasteContainersLayer };
     L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-    // عرض الإحداثيات في الأسفل
+    // عرض الإحداثيات
     const info = L.control({ position: 'bottomleft' });
-    info.onAdd = function() {
-      this._div = L.DomUtil.create('div', 'info');
-      this.update();
-      return this._div;
-    };
-    info.update = function(latlng) {
-      this._div.innerHTML = latlng ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}` : "حرّك الماوس على الخريطة";
-    };
+    info.onAdd = function() { this._div = L.DomUtil.create('div', 'info'); this.update(); return this._div; };
+    info.update = function(latlng) { this._div.innerHTML = latlng ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}` : "حرّك الماوس على الخريطة"; };
     info.addTo(map);
     map.on('mousemove', function(e) { info.update(e.latlng); });
 
