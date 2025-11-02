@@ -26,13 +26,11 @@
   <script>
     const map = L.map("map", { center: [31.9045, 35.2045], zoom: 15 });
 
-    // إنشاء panes لتحديد ترتيب الطبقات
     map.createPane('zonesPane');
-    map.getPane('zonesPane').style.zIndex = 400; // تحت الحاويات
+    map.getPane('zonesPane').style.zIndex = 400;
     map.createPane('containersPane');
-    map.getPane('containersPane').style.zIndex = 500; // فوق المناطق
+    map.getPane('containersPane').style.zIndex = 500;
 
-    // طبقات الخلفية
     const baseLayers = {
       "خريطة داكنة": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO' }),
       "خريطة الشوارع": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
@@ -42,7 +40,6 @@
 
     let wasteContainersLayer, zonesLayer, containerData;
 
-    // تحميل بيانات المناطق
     $.getJSON("RamallahZones.json", function(RZ) {
       zonesLayer = L.geoJson(RZ, {
         style: styleZone,
@@ -53,7 +50,6 @@
       }).addTo(map);
     });
 
-    // تحميل بيانات الحاويات
     $.getJSON("wasteContainer.json", function(WC) {
       containerData = WC;
       wasteContainersLayer = L.geoJson(WC, {
@@ -62,14 +58,13 @@
       }).addTo(map);
     });
 
-    // دوال الحاويات
     function pointToLayerFunction(feature, latlng) {
       const color = feature.properties.TYPE_OF_WA === "Iron" ? "red" :
                     feature.properties.TYPE_OF_WA === "Plastic" ? "blue" :
                     "green";
       const marker = L.circleMarker(latlng, { 
         radius: 6, fillColor: color, color: "white", weight: 1, opacity: 1, fillOpacity: 0.8,
-        pane: 'containersPane' // التأكد أن النقاط فوق المناطق
+        pane: 'containersPane'
       });
       marker.on('mouseover', function() { this.setStyle({ radius: 10, weight: 2 }); });
       marker.on('mouseout', function() { this.setStyle({ radius: 6, weight: 1 }); });
@@ -92,13 +87,13 @@
       updateZoneColors();
     }
 
-    // دوال المناطق
+    // ✅ تعديل الألوان حسب القيم الجديدة
     function getZoneColor(count) {
-      return count > 500 ? 'red' :
-             count > 200 ? 'yelow' :
-             count > 4  ? 'green' :
-             count > 100  ? 'blue' :
-                          '#FFEDA0';
+      return count >= 500 ? 'red' :
+             count >= 200 ? 'yellow' :
+             count >= 100 ? 'green' :
+             count >= 4   ? 'blue' :
+                            '#FFEDA0';
     }
 
     function styleZone(feature) {
@@ -130,21 +125,17 @@
       });
     }
 
-    // التحكم بالطبقات
     const overlays = { "مناطق رام الله": zonesLayer, "حاويات النفايات": wasteContainersLayer };
     L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-    // عرض الإحداثيات
     const info = L.control({ position: 'bottomleft' });
     info.onAdd = function() { this._div = L.DomUtil.create('div', 'info'); this.update(); return this._div; };
     info.update = function(latlng) { this._div.innerHTML = latlng ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}` : "حرّك الماوس على الخريطة"; };
     info.addTo(map);
     map.on('mousemove', function(e) { info.update(e.latlng); });
 
-    // مقياس المسافة
     L.control.scale({ metric: true, imperial: false }).addTo(map);
 
-    // البحث عن المنطقة
     $('#searchZone').on('keyup', function() {
       const query = $(this).val().toLowerCase();
       if (!zonesLayer) return;
@@ -160,6 +151,3 @@
   </script>
 </body>
 </html>
-
-
-
