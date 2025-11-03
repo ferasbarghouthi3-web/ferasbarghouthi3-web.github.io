@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ramallah Waste Containers - Enhanced Map</title>
+  <title>Ramallah Waste Containers - Trash Icon Edition</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -43,7 +43,7 @@
   <script>
     const map = L.map("map", { center: [31.9045, 35.2045], zoom: 15 });
 
-    // === الطبقات الأساسية (النهارية والليلية) ===
+    // === الطبقات الأساسية ===
     const baseLayers = {
       "خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap & CARTO'
@@ -95,15 +95,15 @@
           else return "green";
         }
 
-        // === أيقونات الحاويات ===
-        const icons = {
-          "Plastics": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565547.png", iconSize: [24, 24] }),
-          "Metal": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565539.png", iconSize: [24, 24] }),
-          "Organic": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565550.png", iconSize: [24, 24] }),
-          "Default": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565546.png", iconSize: [24, 24] })
-        };
+        // === أيقونة سلة المهملات ===
+        const trashIcon = L.icon({
+          iconUrl: "https://cdn-icons-png.flaticon.com/512/5028/5028066.png",
+          iconSize: [30, 30],
+          iconAnchor: [15, 30],
+          popupAnchor: [0, -25]
+        });
 
-        // إنشاء طبقة النقاط
+        // إنشاء طبقة النقاط بالحاويات
         wasteContainersLayer = L.geoJson(WC, {
           pointToLayer: function(feature, latlng) {
             let zoneName = "خارج المناطق";
@@ -111,13 +111,10 @@
               const p = turf.point([latlng.lng, latlng.lat]);
               if (turf.booleanPointInPolygon(p, z.feature)) zoneName = z.feature.properties.NAME;
             });
-            const color = getDensityColor(zoneName);
-            const type = feature.properties.TYPE_OF_WA || "Default";
-            const icon = icons[type] || icons["Default"];
 
-            return L.marker(latlng, { icon: icon })
+            return L.marker(latlng, { icon: trashIcon })
               .bindPopup(`
-                <b>نوع الحاوية:</b> ${type}<br>
+                <b>🗑️ نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
                 <b>المنطقة:</b> ${zoneName}<br>
                 <b>عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}
               `);
@@ -142,6 +139,7 @@
           div.innerHTML += '<i style="background:yellow"></i> كثافة متوسطة<br>';
           div.innerHTML += '<i style="background:green"></i> كثافة منخفضة<br>';
           div.innerHTML += '<hr><i style="background:#cccccc"></i> مناطق رام الله<br>';
+          div.innerHTML += '<br><img src="https://cdn-icons-png.flaticon.com/512/5028/5028066.png" width="20"> = حاوية نفايات';
           return div;
         };
         legend.addTo(map);
@@ -215,7 +213,7 @@
       });
     });
 
-    // عرض الإحداثيات عند تحريك الماوس
+    // عرض الإحداثيات
     const info = L.control({ position: 'bottomleft' });
     info.onAdd = function() {
       this._div = L.DomUtil.create('div', 'info');
