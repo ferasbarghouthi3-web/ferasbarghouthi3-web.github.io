@@ -60,10 +60,10 @@
     $.getJSON("RamallahZones.json", function(RZ) {
       zonesLayer = L.geoJson(RZ, {
         style: {
-          color: "#555555",   // حدود رمادية ناعمة
-          weight: 1.5,        // سمك متوسط
-          fillColor: "#c0c0c0", // 🎨 لون سكني واضح
-          fillOpacity: 0.6     // شفافية متوسطة
+          color: "#555555",
+          weight: 1.5,
+          fillColor: "#c0c0c0",
+          fillOpacity: 0.6
         }
       }).addTo(map);
 
@@ -112,9 +112,17 @@
               opacity: 1,
               fillOpacity: 0.9
             }).bindPopup(`
-              <b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
-              <b>المنطقة:</b> ${zoneName}<br>
-              <b>عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}
+              <div style="direction: rtl; text-align: right; font-family: Arial;">
+                <b>🔹 نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
+                <b>🔹 المنطقة:</b> ${zoneName}<br>
+                <b>🔹 عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}
+                <hr>
+                <div style="direction: ltr; text-align: left; color: #333;">
+                  <b>🔹 Container Type:</b> ${feature.properties.TYPE_OF_WA || "Not specified"}<br>
+                  <b>🔹 Zone:</b> ${zoneName}<br>
+                  <b>🔹 Containers in Zone:</b> ${zoneDensity[zoneName] || 0}
+                </div>
+              </div>
             `);
           }
         }).addTo(map);
