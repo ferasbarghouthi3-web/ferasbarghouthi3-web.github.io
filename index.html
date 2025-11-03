@@ -45,14 +45,14 @@
 
     // === الطبقات الأساسية ===
     const baseLayers = {
-      "خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap & CARTO'
-      }),
-      "خريطة نهارية": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      "🗺️ خريطة نهارية": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap'
       }),
+      "🌙 خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap & CARTO'
+      })
     };
-    baseLayers["خريطة نهارية"].addTo(map);
+    baseLayers["🗺️ خريطة نهارية"].addTo(map);
 
     let zonesLayer, wasteContainersLayer, containerData, zoneDensity = {};
 
@@ -95,7 +95,7 @@
           else return "green";
         }
 
-        // إنشاء طبقة النقاط (دوائر بدلاً من أيقونة)
+        // إنشاء طبقة النقاط
         wasteContainersLayer = L.geoJson(WC, {
           pointToLayer: function(feature, latlng) {
             let zoneName = "خارج المناطق";
@@ -182,7 +182,6 @@
         };
         densityBox.addTo(map);
 
-        // تعبئة أسماء المناطق
         setTimeout(() => {
           const select = document.getElementById("zoneSelect");
           Object.keys(zoneDensity).forEach(name => {
@@ -204,17 +203,24 @@
           const div = L.DomUtil.create('div', 'mode-toggle');
           div.innerHTML = "🌓 تبديل الوضع";
           div.onclick = function() {
-            if (map.hasLayer(baseLayers["خريطة نهارية"])) {
-              map.removeLayer(baseLayers["خريطة نهارية"]);
-              baseLayers["خريطة ليلية"].addTo(map);
+            if (map.hasLayer(baseLayers["🗺️ خريطة نهارية"])) {
+              map.removeLayer(baseLayers["🗺️ خريطة نهارية"]);
+              baseLayers["🌙 خريطة ليلية"].addTo(map);
             } else {
-              map.removeLayer(baseLayers["خريطة ليلية"]);
-              baseLayers["خريطة نهارية"].addTo(map);
+              map.removeLayer(baseLayers["🌙 خريطة ليلية"]);
+              baseLayers["🗺️ خريطة نهارية"].addTo(map);
             }
           };
           return div;
         };
         modeToggle.addTo(map);
+
+        // ✅ التحكم بالطبقات القابلة للطي
+        const overlays = {
+          "📍 طبقة الحاويات": wasteContainersLayer,
+          "🧭 طبقة المناطق": zonesLayer
+        };
+        L.control.layers(baseLayers, overlays, { collapsed: true }).addTo(map); // collapsed = زر صغير
       });
     });
 
