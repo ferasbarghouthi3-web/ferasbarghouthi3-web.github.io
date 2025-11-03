@@ -95,14 +95,6 @@
           else return "green";
         }
 
-        // === أيقونة سلة المهملات (صغيرة) ===
-        const trashIcon = L.icon({
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/5028/5028066.png",
-          iconSize: [18, 18],   // ← تم تصغيرها
-          iconAnchor: [9, 18],
-          popupAnchor: [0, -15]
-        });
-
         // إنشاء طبقة الحاويات
         wasteContainersLayer = L.geoJson(WC, {
           pointToLayer: function(feature, latlng) {
@@ -232,3 +224,4 @@
   </script>
 </body>
 </html>
+
