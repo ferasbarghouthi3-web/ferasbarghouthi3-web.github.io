@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ramallah Waste Containers - Density Colored with Zone Info</title>
+  <title>Ramallah Waste Containers - Enhanced Map</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
     body { margin: 0; height: 100%; width: 100%; }
     #map { position: absolute; width: 100%; height: 100%; }
-    .info, .legend {
-      background: rgba(255,255,255,0.8);
+    .info, .legend, .search-box, .density-box, .mode-toggle {
+      background: rgba(255,255,255,0.9);
       padding: 6px 8px;
       font: 14px/16px Arial, Helvetica, sans-serif;
       border-radius: 5px;
@@ -18,6 +18,17 @@
     .legend i {
       width: 18px; height: 18px;
       float: right; margin-left: 8px; opacity: 0.8;
+    }
+    .search-box input {
+      width: 160px;
+      padding: 4px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+    }
+    .mode-toggle {
+      cursor: pointer;
+      font-weight: bold;
+      text-align: center;
     }
   </style>
 </head>
@@ -32,24 +43,27 @@
   <script>
     const map = L.map("map", { center: [31.9045, 35.2045], zoom: 15 });
 
+    // === الطبقات الأساسية (النهارية والليلية) ===
     const baseLayers = {
-      "خريطة داكنة": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO' }),
-      "خريطة الشوارع": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
-      "أقمار صناعية": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri & OpenStreetMap contributors' })
+      "خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap & CARTO'
+      }),
+      "خريطة نهارية": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }),
     };
-    baseLayers["خريطة داكنة"].addTo(map);
+    let currentBase = baseLayers["خريطة نهارية"].addTo(map);
 
     let zonesLayer, wasteContainersLayer, containerData, zoneDensity = {};
 
     // تحميل طبقة المناطق
     $.getJSON("RamallahZones.json", function(RZ) {
       zonesLayer = L.geoJson(RZ, {
-        // ✅ هنا أضفنا اللون السكني للمناطق
         style: {
-          color: "black",         // لون حدود المنطقة
+          color: "black",
           weight: 1,
-          fillColor: "#cccccc",   // اللون السكني
-          fillOpacity: 0.3        // شفافية مناسبة
+          fillColor: "#cccccc",
+          fillOpacity: 0.3
         }
       }).addTo(map);
 
@@ -68,12 +82,11 @@
           zoneDensity[zoneFeature.properties.NAME] = count;
         });
 
-        // تحديد الكثافة (الحد الأدنى والأقصى)
         const counts = Object.values(zoneDensity);
         const max = Math.max(...counts);
         const min = Math.min(...counts);
 
-        // دالة لتحديد لون النقطة حسب الكثافة
+        // لون الكثافة
         function getDensityColor(zoneName) {
           const c = zoneDensity[zoneName] || 0;
           const ratio = (c - min) / (max - min + 0.001);
@@ -82,7 +95,15 @@
           else return "green";
         }
 
-        // إنشاء طبقة النقاط (الحاويات)
+        // === أيقونات الحاويات ===
+        const icons = {
+          "Plastics": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565547.png", iconSize: [24, 24] }),
+          "Metal": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565539.png", iconSize: [24, 24] }),
+          "Organic": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565550.png", iconSize: [24, 24] }),
+          "Default": L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/565/565546.png", iconSize: [24, 24] })
+        };
+
+        // إنشاء طبقة النقاط
         wasteContainersLayer = L.geoJson(WC, {
           pointToLayer: function(feature, latlng) {
             let zoneName = "خارج المناطق";
@@ -91,22 +112,19 @@
               if (turf.booleanPointInPolygon(p, z.feature)) zoneName = z.feature.properties.NAME;
             });
             const color = getDensityColor(zoneName);
-            return L.circleMarker(latlng, {
-              radius: 6,
-              fillColor: color,
-              color: "white",
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.8
-            }).bindPopup(`
-              <b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
-              <b>المنطقة:</b> ${zoneName}<br>
-              <b>عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}
-            `);
+            const type = feature.properties.TYPE_OF_WA || "Default";
+            const icon = icons[type] || icons["Default"];
+
+            return L.marker(latlng, { icon: icon })
+              .bindPopup(`
+                <b>نوع الحاوية:</b> ${type}<br>
+                <b>المنطقة:</b> ${zoneName}<br>
+                <b>عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}
+              `);
           }
         }).addTo(map);
 
-        // عند النقر على المنطقة، عرض معلوماتها
+        // النقر على المنطقة
         zonesLayer.eachLayer(function(layer) {
           const zoneName = layer.feature.properties.NAME;
           const count = zoneDensity[zoneName] || 0;
@@ -115,7 +133,7 @@
           });
         });
 
-        // وسيلة إيضاح (Legend)
+        // وسيلة إيضاح
         const legend = L.control({ position: 'bottomright' });
         legend.onAdd = function() {
           const div = L.DomUtil.create('div', 'legend');
@@ -123,10 +141,77 @@
           div.innerHTML += '<i style="background:red"></i> كثافة عالية<br>';
           div.innerHTML += '<i style="background:yellow"></i> كثافة متوسطة<br>';
           div.innerHTML += '<i style="background:green"></i> كثافة منخفضة<br>';
-          div.innerHTML += '<hr><i style="background:#cccccc"></i> مناطق رام الله<br>'; // ✅ تمت إضافة اللون السكني في التوضيح
+          div.innerHTML += '<hr><i style="background:#cccccc"></i> مناطق رام الله<br>';
           return div;
         };
         legend.addTo(map);
+
+        // === مربع البحث ===
+        const searchControl = L.control({ position: 'topleft' });
+        searchControl.onAdd = function() {
+          const div = L.DomUtil.create('div', 'search-box');
+          div.innerHTML = `<input id="searchZone" type="text" placeholder="ابحث عن منطقة...">`;
+          div.firstChild.addEventListener("keyup", function(e) {
+            const val = e.target.value.trim();
+            zonesLayer.eachLayer(function(layer) {
+              const name = layer.feature.properties.NAME;
+              if (name.includes(val) && val.length > 0) {
+                map.fitBounds(layer.getBounds());
+                layer.setStyle({ color: "blue", weight: 3 });
+              } else {
+                layer.setStyle({ color: "black", weight: 1 });
+              }
+            });
+          });
+          return div;
+        };
+        searchControl.addTo(map);
+
+        // === مربع الكثافة ===
+        const densityBox = L.control({ position: 'topright' });
+        densityBox.onAdd = function() {
+          const div = L.DomUtil.create('div', 'density-box');
+          div.innerHTML = `<b>حساب الكثافة:</b><br>
+            <select id="zoneSelect"></select><br>
+            <button id="calcBtn">احسب</button>
+            <div id="result"></div>`;
+          return div;
+        };
+        densityBox.addTo(map);
+
+        // تعبئة أسماء المناطق
+        setTimeout(() => {
+          const select = document.getElementById("zoneSelect");
+          Object.keys(zoneDensity).forEach(name => {
+            const opt = document.createElement("option");
+            opt.value = name; opt.textContent = name;
+            select.appendChild(opt);
+          });
+
+          document.getElementById("calcBtn").onclick = function() {
+            const name = select.value;
+            const count = zoneDensity[name];
+            document.getElementById("result").innerHTML = `<b>عدد الحاويات:</b> ${count}`;
+          };
+        }, 500);
+
+        // === زر الوضع الليلي/النهاري ===
+        const modeToggle = L.control({ position: 'bottomleft' });
+        modeToggle.onAdd = function() {
+          const div = L.DomUtil.create('div', 'mode-toggle');
+          div.innerHTML = "🌓 تبديل الوضع";
+          div.onclick = function() {
+            if (map.hasLayer(baseLayers["خريطة نهارية"])) {
+              map.removeLayer(baseLayers["خريطة نهارية"]);
+              baseLayers["خريطة ليلية"].addTo(map);
+            } else {
+              map.removeLayer(baseLayers["خريطة ليلية"]);
+              baseLayers["خريطة نهارية"].addTo(map);
+            }
+          };
+          return div;
+        };
+        modeToggle.addTo(map);
       });
     });
 
