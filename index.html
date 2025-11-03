@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ramallah Waste Containers - Trash Icon Edition</title>
+  <title>Ramallah Waste Containers - Updated Map</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -60,10 +60,10 @@
     $.getJSON("RamallahZones.json", function(RZ) {
       zonesLayer = L.geoJson(RZ, {
         style: {
-          color: "black",
-          weight: 1,
-          fillColor: "#cccccc",
-          fillOpacity: 0.3
+          color: "black",       // حدود المنطقة
+          weight: 1,            // سمك الخط
+          fillColor: "#d9d9d9", // لون سكني واضح
+          fillOpacity: 0.4      // شفافية معتدلة
         }
       }).addTo(map);
 
@@ -86,7 +86,7 @@
         const max = Math.max(...counts);
         const min = Math.min(...counts);
 
-        // لون الكثافة
+        // دالة لتحديد لون الكثافة
         function getDensityColor(zoneName) {
           const c = zoneDensity[zoneName] || 0;
           const ratio = (c - min) / (max - min + 0.001);
@@ -95,15 +95,15 @@
           else return "green";
         }
 
-        // === أيقونة سلة المهملات ===
+        // === أيقونة سلة المهملات (صغيرة) ===
         const trashIcon = L.icon({
           iconUrl: "https://cdn-icons-png.flaticon.com/512/5028/5028066.png",
-          iconSize: [30, 30],
-          iconAnchor: [15, 30],
-          popupAnchor: [0, -25]
+          iconSize: [18, 18],   // ← تم تصغيرها
+          iconAnchor: [9, 18],
+          popupAnchor: [0, -15]
         });
 
-        // إنشاء طبقة النقاط بالحاويات
+        // إنشاء طبقة الحاويات
         wasteContainersLayer = L.geoJson(WC, {
           pointToLayer: function(feature, latlng) {
             let zoneName = "خارج المناطق";
@@ -138,13 +138,13 @@
           div.innerHTML += '<i style="background:red"></i> كثافة عالية<br>';
           div.innerHTML += '<i style="background:yellow"></i> كثافة متوسطة<br>';
           div.innerHTML += '<i style="background:green"></i> كثافة منخفضة<br>';
-          div.innerHTML += '<hr><i style="background:#cccccc"></i> مناطق رام الله<br>';
-          div.innerHTML += '<br><img src="https://cdn-icons-png.flaticon.com/512/5028/5028066.png" width="20"> = حاوية نفايات';
+          div.innerHTML += '<hr><i style="background:#d9d9d9"></i> مناطق رام الله<br>';
+          div.innerHTML += '<br><img src="https://cdn-icons-png.flaticon.com/512/5028/5028066.png" width="16"> = حاوية نفايات';
           return div;
         };
         legend.addTo(map);
 
-        // === مربع البحث ===
+        // مربع البحث
         const searchControl = L.control({ position: 'topleft' });
         searchControl.onAdd = function() {
           const div = L.DomUtil.create('div', 'search-box');
@@ -157,7 +157,7 @@
                 map.fitBounds(layer.getBounds());
                 layer.setStyle({ color: "blue", weight: 3 });
               } else {
-                layer.setStyle({ color: "black", weight: 1 });
+                layer.setStyle({ color: "black", weight: 1, fillColor: "#d9d9d9", fillOpacity: 0.4 });
               }
             });
           });
@@ -165,7 +165,7 @@
         };
         searchControl.addTo(map);
 
-        // === مربع الكثافة ===
+        // مربع الكثافة
         const densityBox = L.control({ position: 'topright' });
         densityBox.onAdd = function() {
           const div = L.DomUtil.create('div', 'density-box');
@@ -193,7 +193,7 @@
           };
         }, 500);
 
-        // === زر الوضع الليلي/النهاري ===
+        // زر الوضع الليلي/النهاري
         const modeToggle = L.control({ position: 'bottomleft' });
         modeToggle.onAdd = function() {
           const div = L.DomUtil.create('div', 'mode-toggle');
@@ -213,7 +213,7 @@
       });
     });
 
-    // عرض الإحداثيات
+    // عرض الإحداثيات عند تحريك الماوس
     const info = L.control({ position: 'bottomleft' });
     info.onAdd = function() {
       this._div = L.DomUtil.create('div', 'info');
