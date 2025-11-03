@@ -2,14 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ramallah Waste Containers - Density Colored</title>
+  <title>Ramallah Waste Containers - Density Colored with Zone Info</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
     body { margin: 0; height: 100%; width: 100%; }
     #map { position: absolute; width: 100%; height: 100%; }
-    .info { background: rgba(255,255,255,0.8); padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; border-radius: 5px; }
+    .info, .legend {
+      background: rgba(255,255,255,0.8);
+      padding: 6px 8px;
+      font: 14px/16px Arial, Helvetica, sans-serif;
+      border-radius: 5px;
+    }
+    .legend i {
+      width: 18px; height: 18px;
+      float: right; margin-left: 8px; opacity: 0.8;
+    }
   </style>
 </head>
 <body>
@@ -32,16 +41,17 @@
 
     let zonesLayer, wasteContainersLayer, containerData, zoneDensity = {};
 
-    // تحميل المناطق
+    // تحميل المناطق أولاً
     $.getJSON("RamallahZones.json", function(RZ) {
-      zonesLayer = L.geoJson(RZ);
-      map.addLayer(zonesLayer);
+      zonesLayer = L.geoJson(RZ, {
+        style: { color: "black", weight: 1, fillOpacity: 0.05 }
+      }).addTo(map);
 
-      // بعد تحميل المناطق نحمل النقاط
+      // بعد تحميل المناطق، نحمل النقاط
       $.getJSON("wasteContainer.json", function(WC) {
         containerData = WC;
 
-        // حساب كثافة الحاويات في كل منطقة
+        // حساب عدد الحاويات في كل منطقة
         zonesLayer.eachLayer(function(zoneLayer) {
           const zoneFeature = zoneLayer.feature;
           let count = 0;
@@ -52,12 +62,12 @@
           zoneDensity[zoneFeature.properties.NAME] = count;
         });
 
-        // تحديد الحدود الدنيا والعليا للكثافة لتصنيف الألوان
+        // حساب الحدود الدنيا والعليا لتحديد الكثافة النسبية
         const counts = Object.values(zoneDensity);
         const max = Math.max(...counts);
         const min = Math.min(...counts);
 
-        // دالة لتحديد لون النقطة حسب الكثافة في منطقتها
+        // دالة لتحديد اللون بناء على الكثافة
         function getDensityColor(zoneName) {
           const c = zoneDensity[zoneName] || 0;
           const ratio = (c - min) / (max - min + 0.001);
@@ -66,7 +76,7 @@
           else return "green";
         }
 
-        // إنشاء طبقة الحاويات بالألوان حسب الكثافة
+        // رسم النقاط بالألوان حسب كثافة منطقتها
         wasteContainersLayer = L.geoJson(WC, {
           pointToLayer: function(feature, latlng) {
             let zoneName = "خارج المناطق";
@@ -84,9 +94,30 @@
               fillOpacity: 0.8
             }).bindPopup(`<b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
                           <b>المنطقة:</b> ${zoneName}<br>
-                          <b>كثافة المنطقة:</b> ${zoneDensity[zoneName] || 0}`);
+                          <b>عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}`);
           }
         }).addTo(map);
+
+        // عند النقر على منطقة، عرض عدد الحاويات واسم المنطقة
+        zonesLayer.eachLayer(function(layer) {
+          const zoneName = layer.feature.properties.NAME;
+          const count = zoneDensity[zoneName] || 0;
+          layer.on('click', function(e) {
+            layer.bindPopup(`<b>المنطقة:</b> ${zoneName}<br><b>عدد الحاويات:</b> ${count}`).openPopup();
+          });
+        });
+
+        // إضافة وسيلة الإيضاح (Legend)
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function() {
+          const div = L.DomUtil.create('div', 'legend');
+          div.innerHTML += "<b>تصنيف الكثافة:</b><br>";
+          div.innerHTML += '<i style="background:red"></i> كثافة عالية<br>';
+          div.innerHTML += '<i style="background:yellow"></i> كثافة متوسطة<br>';
+          div.innerHTML += '<i style="background:green"></i> كثافة منخفضة<br>';
+          return div;
+        };
+        legend.addTo(map);
       });
     });
 
@@ -100,12 +131,4 @@
     info.update = function(latlng) {
       this._div.innerHTML = latlng
         ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}`
-        : "حرّك الماوس على الخريطة";
-    };
-    info.addTo(map);
-    map.on('mousemove', function(e) { info.update(e.latlng); });
 
-    L.control.scale({ metric: true, imperial: false }).addTo(map);
-  </script>
-</body>
-</html>
