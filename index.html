@@ -131,4 +131,12 @@
     info.update = function(latlng) {
       this._div.innerHTML = latlng
         ? `<b>Lat:</b> ${latlng.lat.toFixed(5)} , <b>Lng:</b> ${latlng.lng.toFixed(5)}`
+        : "حرّك الماوس على الخريطة";
+    };
+    info.addTo(map);
+    map.on('mousemove', function(e) { info.update(e.latlng); });
 
+    L.control.scale({ metric: true, imperial: false }).addTo(map);
+  </script>
+</body>
+</html>
