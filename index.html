@@ -45,14 +45,14 @@
 
     // === الطبقات الأساسية ===
     const baseLayers = {
-      " خريطة نهارية": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      "خريطة نهارية": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap'
       }),
-      " خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      "خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap & CARTO'
       })
     };
-    baseLayers["🗺️ خريطة نهارية"].addTo(map);
+    baseLayers["خريطة نهارية"].addTo(map);
 
     let zonesLayer, wasteContainersLayer, containerData, zoneDensity = {};
 
@@ -201,14 +201,14 @@
         const modeToggle = L.control({ position: 'bottomleft' });
         modeToggle.onAdd = function() {
           const div = L.DomUtil.create('div', 'mode-toggle');
-          div.innerHTML = " تبديل الوضع";
+          div.innerHTML = "تبديل الوضع";
           div.onclick = function() {
-            if (map.hasLayer(baseLayers[" خريطة نهارية"])) {
-              map.removeLayer(baseLayers[" خريطة نهارية"]);
-              baseLayers["🌙 خريطة ليلية"].addTo(map);
+            if (map.hasLayer(baseLayers["خريطة نهارية"])) {
+              map.removeLayer(baseLayers["خريطة نهارية"]);
+              baseLayers["خريطة ليلية"].addTo(map);
             } else {
-              map.removeLayer(baseLayers["🌙 خريطة ليلية"]);
-              baseLayers[" خريطة نهارية"].addTo(map);
+              map.removeLayer(baseLayers["خريطة ليلية"]);
+              baseLayers["خريطة نهارية"].addTo(map);
             }
           };
           return div;
@@ -243,4 +243,5 @@
   </script>
 </body>
 </html>
+
 
