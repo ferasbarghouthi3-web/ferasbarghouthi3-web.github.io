@@ -45,10 +45,10 @@
 
     // === الطبقات الأساسية ===
     const baseLayers = {
-      "🗺️ خريطة نهارية": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      " خريطة نهارية": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap'
       }),
-      "🌙 خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      " خريطة ليلية": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap & CARTO'
       })
     };
@@ -201,24 +201,24 @@
         const modeToggle = L.control({ position: 'bottomleft' });
         modeToggle.onAdd = function() {
           const div = L.DomUtil.create('div', 'mode-toggle');
-          div.innerHTML = "🌓 تبديل الوضع";
+          div.innerHTML = " تبديل الوضع";
           div.onclick = function() {
-            if (map.hasLayer(baseLayers["🗺️ خريطة نهارية"])) {
-              map.removeLayer(baseLayers["🗺️ خريطة نهارية"]);
+            if (map.hasLayer(baseLayers[" خريطة نهارية"])) {
+              map.removeLayer(baseLayers[" خريطة نهارية"]);
               baseLayers["🌙 خريطة ليلية"].addTo(map);
             } else {
               map.removeLayer(baseLayers["🌙 خريطة ليلية"]);
-              baseLayers["🗺️ خريطة نهارية"].addTo(map);
+              baseLayers[" خريطة نهارية"].addTo(map);
             }
           };
           return div;
         };
         modeToggle.addTo(map);
 
-        // ✅ التحكم بالطبقات القابلة للطي
+        //  التحكم بالطبقات القابلة للطي
         const overlays = {
-          "📍 طبقة الحاويات": wasteContainersLayer,
-          "🧭 طبقة المناطق": zonesLayer
+          " طبقة الحاويات": wasteContainersLayer,
+          " طبقة المناطق": zonesLayer
         };
         L.control.layers(baseLayers, overlays, { collapsed: true }).addTo(map); // collapsed = زر صغير
       });
@@ -243,3 +243,4 @@
   </script>
 </body>
 </html>
+
