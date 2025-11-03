@@ -101,7 +101,7 @@
       if (wasteContainersLayer) {
         wasteContainersLayer.eachLayer(function(container) {
           const point = turf.point([container.getLatLng().lng, container.getLatLng().lat]);
-          if (turf.booleanPointInPolygon(point, feature)) count++;
+        if (turf.booleanPointInPolygon(point, turf.feature(feature.geometry))) count++;
         });
       }
       return { fillColor: getZoneColor(count), fillOpacity: 0.5, color: "black", weight: 1 };
@@ -151,6 +151,7 @@
   </script>
 </body>
 </html>
+
 
 
 
