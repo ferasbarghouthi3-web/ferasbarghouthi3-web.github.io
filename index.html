@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ramallah Waste Containers - Updated Map</title>
+  <title>Ramallah Waste Containers - Clean Map</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -52,7 +52,7 @@
         attribution: '&copy; OpenStreetMap'
       }),
     };
-    let currentBase = baseLayers["خريطة نهارية"].addTo(map);
+    baseLayers["خريطة نهارية"].addTo(map);
 
     let zonesLayer, wasteContainersLayer, containerData, zoneDensity = {};
 
@@ -60,10 +60,10 @@
     $.getJSON("RamallahZones.json", function(RZ) {
       zonesLayer = L.geoJson(RZ, {
         style: {
-          color: "black",       // حدود المنطقة
-          weight: 1,            // سمك الخط
-          fillColor: "#d9d9d9", // لون سكني واضح
-          fillOpacity: 0.4      // شفافية معتدلة
+          color: "#555555",   // حدود رمادية ناعمة
+          weight: 1.5,        // سمك متوسط
+          fillColor: "#c0c0c0", // 🎨 لون سكني واضح
+          fillOpacity: 0.6     // شفافية متوسطة
         }
       }).addTo(map);
 
@@ -95,7 +95,7 @@
           else return "green";
         }
 
-        // إنشاء طبقة الحاويات
+        // إنشاء طبقة النقاط (دوائر بدلاً من أيقونة)
         wasteContainersLayer = L.geoJson(WC, {
           pointToLayer: function(feature, latlng) {
             let zoneName = "خارج المناطق";
@@ -103,13 +103,19 @@
               const p = turf.point([latlng.lng, latlng.lat]);
               if (turf.booleanPointInPolygon(p, z.feature)) zoneName = z.feature.properties.NAME;
             });
-
-            return L.marker(latlng, { icon: trashIcon })
-              .bindPopup(`
-                <b>🗑️ نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
-                <b>المنطقة:</b> ${zoneName}<br>
-                <b>عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}
-              `);
+            const color = getDensityColor(zoneName);
+            return L.circleMarker(latlng, {
+              radius: 5,
+              fillColor: color,
+              color: "white",
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.9
+            }).bindPopup(`
+              <b>نوع الحاوية:</b> ${feature.properties.TYPE_OF_WA || "غير محدد"}<br>
+              <b>المنطقة:</b> ${zoneName}<br>
+              <b>عدد الحاويات في المنطقة:</b> ${zoneDensity[zoneName] || 0}
+            `);
           }
         }).addTo(map);
 
@@ -130,8 +136,7 @@
           div.innerHTML += '<i style="background:red"></i> كثافة عالية<br>';
           div.innerHTML += '<i style="background:yellow"></i> كثافة متوسطة<br>';
           div.innerHTML += '<i style="background:green"></i> كثافة منخفضة<br>';
-          div.innerHTML += '<hr><i style="background:#d9d9d9"></i> مناطق رام الله<br>';
-          div.innerHTML += '<br><img src="https://cdn-icons-png.flaticon.com/512/5028/5028066.png" width="16"> = حاوية نفايات';
+          div.innerHTML += '<hr><i style="background:#c0c0c0"></i> مناطق رام الله<br>';
           return div;
         };
         legend.addTo(map);
@@ -149,7 +154,7 @@
                 map.fitBounds(layer.getBounds());
                 layer.setStyle({ color: "blue", weight: 3 });
               } else {
-                layer.setStyle({ color: "black", weight: 1, fillColor: "#d9d9d9", fillOpacity: 0.4 });
+                layer.setStyle({ color: "#555555", weight: 1.5, fillColor: "#c0c0c0", fillOpacity: 0.6 });
               }
             });
           });
@@ -224,4 +229,3 @@
   </script>
 </body>
 </html>
-
