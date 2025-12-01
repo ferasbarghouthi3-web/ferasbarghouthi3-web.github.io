@@ -8,14 +8,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; width: 100%; }
     </style>
 </head>
 
@@ -45,14 +39,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // ======================
-        // 1) Initialize the Map
-        // ======================
+        // ---------------------------------------
+        // 1) Initialize Map
+        // ---------------------------------------
         var map = L.map('map').setView([31.9, 35.2], 13);
 
-        // ======================
-        // Base Maps (Day/Night)
-        // ======================
         var dayMap = L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             { maxZoom: 19 }
@@ -63,10 +54,22 @@
             { maxZoom: 19 }
         );
 
-        // ======================
-        // 2) Load GeoJSON Function
-        // with full attribute popup
-        // ======================
+        // ---------------------------------------
+        // CUSTOM ICONS
+        // ---------------------------------------
+        var schoolIcon = L.icon({
+            iconUrl: "https://cdn-icons-png.flaticon.com/512/1670/1670614.png",
+            iconSize: [32, 32]
+        });
+
+        var wellIcon = L.icon({
+            iconUrl: "https://cdn-icons-png.flaticon.com/512/727/727790.png",
+            iconSize: [28, 28]
+        });
+
+        // ---------------------------------------
+        // 2) Default loader for polygons/lines
+        // ---------------------------------------
         function loadGeoJSON(file, style = {}) {
             return fetch(file)
                 .then(res => res.json())
@@ -86,22 +89,81 @@
                             }
 
                             html += "</table>";
-
                             layer.bindPopup(html);
                         }
                     });
                 });
         }
 
-        // ======================
-        // 3) Load all layers (slope removed)
-        // ======================
+        // ---------------------------------------
+        // 3) Schools with custom icon
+        // ---------------------------------------
+        function loadSchools() {
+            return fetch("schools.json")
+                .then(res => res.json())
+                .then(data => {
+                    return L.geoJSON(data, {
+                        pointToLayer: function (feature, latlng) {
+                            return L.marker(latlng, { icon: schoolIcon });
+                        },
+                        onEachFeature: function (feature, layer) {
+
+                            let html = "<b>Attributes:</b><br><table style='width:100%; border-collapse: collapse;'>";
+
+                            for (let k in feature.properties) {
+                                html += `
+                                <tr>
+                                    <td style='border:1px solid #ccc; padding:4px;'><b>${k}</b></td>
+                                    <td style='border:1px solid #ccc; padding:4px;'>${feature.properties[k]}</td>
+                                </tr>`;
+                            }
+
+                            html += "</table>";
+                            layer.bindPopup(html);
+                        }
+                    });
+                });
+        }
+
+        // ---------------------------------------
+        // 4) Wells with custom icon
+        // ---------------------------------------
+        function loadWells() {
+            return fetch("wells.json")
+                .then(res => res.json())
+                .then(data => {
+                    return L.geoJSON(data, {
+                        pointToLayer: function (feature, latlng) {
+                            return L.marker(latlng, { icon: wellIcon });
+                        },
+                        onEachFeature: function (feature, layer) {
+
+                            let html = "<b>Attributes:</b><br><table style='width:100%; border-collapse: collapse;'>";
+
+                            for (let k in feature.properties) {
+                                html += `
+                                <tr>
+                                    <td style='border:1px solid #ccc; padding:4px;'><b>${k}</b></td>
+                                    <td style='border:1px solid #ccc; padding:4px;'>${feature.properties[k]}</td>
+                                </tr>`;
+                            }
+
+                            html += "</table>";
+                            layer.bindPopup(html);
+                        }
+                    });
+                });
+        }
+
+        // ---------------------------------------
+        // 5) Load all layers
+        // ---------------------------------------
         Promise.all([
             loadGeoJSON("ramallah.json", { color: "#222", weight: 3, fillOpacity: 0 }),
             loadGeoJSON("built_up.json", { color: "#ff7800", weight: 1, fillOpacity: 0.5 }),
             loadGeoJSON("roods.json", { color: "#0066ff", weight: 2 }),
-            loadGeoJSON("schools.json", { color: "red" }),
-            loadGeoJSON("wells.json", { color: "blue" }),
+            loadSchools(),
+            loadWells(),
             loadGeoJSON("natural.json", { color: "#008000", weight: 1, fillOpacity: 0.4 })
         ]).then(function (layers) {
 
@@ -112,10 +174,10 @@
             var wells = layers[4].addTo(map);
             var natural = layers[5].addTo(map);
 
-            // Always push boundary to bottom
+            // Keep Ramallah at bottom
             ramallah.bringToBack();
 
-            // Layer Control
+            // Layer control
             L.control.layers(null, {
                 "Ramallah Boundary": ramallah,
                 "Built-up Areas": built_up,
@@ -126,9 +188,9 @@
             }).addTo(map);
         });
 
-        // ======================
-        // 4) Toggle Night Mode
-        // ======================
+        // ---------------------------------------
+        // 6) Toggle Night Mode
+        // ---------------------------------------
         let nightMode = false;
 
         document.getElementById("modeToggle").addEventListener("click", function () {
@@ -136,26 +198,21 @@
             if (!nightMode) {
                 map.removeLayer(dayMap);
                 map.addLayer(nightMap);
-
                 this.innerText = "Day Mode";
                 this.style.background = "#eee";
                 this.style.color = "#000";
-
                 nightMode = true;
-
-            } else {
+            } 
+            else {
                 map.removeLayer(nightMap);
                 map.addLayer(dayMap);
-
                 this.innerText = "Night Mode";
                 this.style.background = "#222";
                 this.style.color = "#fff";
-
                 nightMode = false;
             }
 
         });
-
     </script>
 
 </body>
