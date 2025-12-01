@@ -45,18 +45,38 @@
         }).addTo(map);
 
         // ======================
-        // 2) Load Layer Function
+        // 2) Function: Load GeoJSON
+        // With full popup attributes table
         // ======================
-        function loadGeoJSON(file, style = {}, popupField = null) {
+        function loadGeoJSON(file, style = {}) {
             return fetch(file)
                 .then(res => res.json())
                 .then(data => {
                     return L.geoJSON(data, {
                         style: style,
                         onEachFeature: function (feature, layer) {
-                            if (popupField && feature.properties[popupField]) {
-                                layer.bindPopup(String(feature.properties[popupField]));
+
+                            // Create HTML table with attributes
+                            let info = "<b>Attributes:</b><br><table style='width:100%; border-collapse: collapse;'>";
+
+                            for (let key in feature.properties) {
+                                info += `
+                                    <tr>
+                                        <td style="border:1px solid #ccc; padding:4px;"><b>${key}</b></td>
+                                        <td style="border:1px solid #ccc; padding:4px;">${feature.properties[key]}</td>
+                                    </tr>
+                                `;
                             }
+
+                            info += "</table>";
+
+                            // Bind popup
+                            layer.bindPopup(info);
+
+                            // Optionally log attributes in console
+                            layer.on("click", function () {
+                                console.log("Feature Properties:", feature.properties);
+                            });
                         }
                     });
                 });
@@ -65,14 +85,13 @@
         // ======================
         // 3) Load All Layers
         // ======================
-
         Promise.all([
-            loadGeoJSON("ramallah.json", { color: "#222", weight: 2 }, null),
+            loadGeoJSON("ramallah.json", { color: "#222", weight: 2 }),
             loadGeoJSON("built_up.json", { color: "#ff7800", weight: 1, fillOpacity: 0.5 }),
             loadGeoJSON("roods.json", { color: "#0066ff", weight: 2 }),
-            loadGeoJSON("schools.json", {}, "name"),
+            loadGeoJSON("schools.json", { color: "red" }),
             loadGeoJSON("slope.json", { color: "#228B22", weight: 1 }),
-            loadGeoJSON("wells.json", { color: "blue" }, "type"),
+            loadGeoJSON("wells.json", { color: "blue" }),
             loadGeoJSON("natural.json", { color: "#008000", weight: 1, fillOpacity: 0.4 })
         ]).then(function (layers) {
 
@@ -84,9 +103,7 @@
             var wells = layers[5].addTo(map);
             var natural = layers[6].addTo(map);
 
-            // ======================
-            // 4) Layer Control
-            // ======================
+            // Layer Control
             var overlays = {
                 "Ramallah Boundary": ramallah,
                 "Built-up Areas": built_up,
@@ -96,16 +113,11 @@
                 "Wells": wells,
                 "Natural Areas": natural
             };
-
             L.control.layers(null, overlays).addTo(map);
 
             // ==============================
-            // 5) Simple Suitability Analysis
+            // 4) Simple Suitability Layer (demo)
             // ==============================
-
-            // Example: highlight areas suitable for a new school
-            // (Only for demonstration — can be improved later)
-
             var suitabilityStyle = {
                 color: "green",
                 fillColor: "lightgreen",
@@ -115,7 +127,7 @@
 
             var suitabilityLayer = L.geoJSON(null, suitabilityStyle);
 
-            // Simple example: show built-up area as "potential"
+            // Add built-up areas as a mock "suitable" zone
             built_up.eachLayer(function (layer) {
                 suitabilityLayer.addData(layer.toGeoJSON());
             });
@@ -125,7 +137,6 @@
             L.control.layers(null, {
                 "Suitable Areas (Demo)": suitabilityLayer
             }, { collapsed: false }).addTo(map);
-
         });
 
     </script>
