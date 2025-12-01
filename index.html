@@ -1,162 +1,184 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-    <meta charset="utf-8">
-    <title>Future Schools Site Suitability - Ramallah</title>
+    <meta charset="utf-8" />
+    <title>WebGIS Project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
-        body {
+        body, html {
             margin: 0;
             padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: "Cairo", sans-serif;
         }
+
         #map {
-            height: 100vh;
             width: 100%;
+            height: 100%;
+        }
+
+        /* زر الوضع الليلي */
+        #darkToggle {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 9999;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 5px #0003;
         }
     </style>
 </head>
-
 <body>
 
-    <!-- Night Mode Button -->
-    <button id="modeToggle" 
-    style="
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        z-index: 9999;
-        background: #222;
-        color: #fff;
-        padding: 8px 12px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        box-shadow: 0 0 5px rgba(0,0,0,0.3);
-    ">
-        Night Mode
-    </button>
+<div id="darkToggle">🌙 الوضع الليلي</div>
+<div id="map"></div>
 
-    <div id="map"></div>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
 
-    <script>
-        // ======================
-        // 1) Initialize the Map
-        // ======================
-        var map = L.map('map').setView([31.9, 35.2], 13);
+// 🗺️ إنشاء الخريطة
+var map = L.map("map").setView([31.9, 35.2], 11);
 
-        // ======================
-        // Base Maps (Day/Night)
-        // ======================
-        var dayMap = L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            { maxZoom: 19 }
-        ).addTo(map);
+// 🟦 الوضع النهاري
+var lightBasemap = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19 }
+).addTo(map);
 
-        var nightMap = L.tileLayer(
-            "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-            { maxZoom: 19 }
-        );
+// 🌑 الوضع الليلي
+var darkBasemap = L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    { maxZoom: 19 }
+);
 
-        // ======================
-        // 2) Load GeoJSON Function
-        // with full attribute popup
-        // ======================
-        function loadGeoJSON(file, style = {}) {
-            return fetch(file)
-                .then(res => res.json())
-                .then(data => {
-                    return L.geoJSON(data, {
-                        style: style,
-                        onEachFeature: function (feature, layer) {
+// 🔀 زر تبديل الوضع الليلي
+document.getElementById("darkToggle").onclick = function () {
+    if (map.hasLayer(lightBasemap)) {
+        map.removeLayer(lightBasemap);
+        map.addLayer(darkBasemap);
+        this.innerHTML = "☀️ الوضع النهاري";
+    } else {
+        map.removeLayer(darkBasemap);
+        map.addLayer(lightBasemap);
+        this.innerHTML = "🌙 الوضع الليلي";
+    }
+};
 
-                            let html = "<b>Attributes:</b><br><table style='width:100%; border-collapse: collapse;'>";
+// ⭐⭐⭐ تحميل طبقة رام الله (أساس الخريطة)
+var ramallahLayer;
 
-                            for (let k in feature.properties) {
-                                html += `
-                                <tr>
-                                    <td style='border:1px solid #ccc; padding:4px;'><b>${k}</b></td>
-                                    <td style='border:1px solid #ccc; padding:4px;'>${feature.properties[k]}</td>
-                                </tr>`;
-                            }
+fetch("ramallah.geojson")
+    .then(res => res.json())
+    .then(data => {
+        ramallahLayer = L.geoJSON(data, {
+            style: { color: "gray", weight: 1, fillOpacity: 0.1 }
+        }).addTo(map);
+    });
 
-                            html += "</table>";
+// -------------------------
+// أيقونات مخصصة 🏫 💧
+// -------------------------
 
-                            layer.bindPopup(html);
-                        }
-                    });
-                });
-        }
+var schoolIcon = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/167/167707.png",
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -28]
+});
 
-        // ======================
-        // 3) Load all layers (slope removed)
-        // ======================
-        Promise.all([
-            loadGeoJSON("ramallah.json", { color: "#222", weight: 3, fillOpacity: 0 }),
-            loadGeoJSON("built_up.json", { color: "#ff7800", weight: 1, fillOpacity: 0.5 }),
-            loadGeoJSON("roods.json", { color: "#0066ff", weight: 2 }),
-            loadGeoJSON("schools.json", { color: "red" }),
-            loadGeoJSON("wells.json", { color: "blue" }),
-            loadGeoJSON("natural.json", { color: "#008000", weight: 1, fillOpacity: 0.4 })
-        ]).then(function (layers) {
+var wellIcon = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/4148/4148460.png",
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -25]
+});
 
-            var ramallah = layers[0].addTo(map);
-            var built_up = layers[1].addTo(map);
-            var roads = layers[2].addTo(map);
-            var schools = layers[3].addTo(map);
-            var wells = layers[4].addTo(map);
-            var natural = layers[5].addTo(map);
+// -------------------------
+// طبقة المدارس 🏫
+// -------------------------
+var schoolsLayer;
 
-            // Always push boundary to bottom
-            ramallah.bringToBack();
+fetch("schools.geojson")
+    .then(res => res.json())
+    .then(data => {
 
-            // Layer Control
-            L.control.layers(null, {
-                "Ramallah Boundary": ramallah,
-                "Built-up Areas": built_up,
-                "Road Network": roads,
-                "Schools": schools,
-                "Wells": wells,
-                "Natural Areas": natural
+        schoolsLayer = L.geoJSON(data, {
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, { icon: schoolIcon });
+            },
+            onEachFeature: function (feature, layer) {
+                var arabicName = feature.properties.school_ar || "مدرسة غير معروفة";
+                var englishName = feature.properties.school_en || "Unknown school";
+
+                layer.bindPopup(`
+                    <b>اسم المدرسة (عربي):</b> ${arabicName}<br>
+                    <b>School Name (EN):</b> ${englishName}
+                `);
+            }
+        }).addTo(map);
+
+    });
+
+// -------------------------
+// طبقة الآبار 💧
+// -------------------------
+var wellsLayer;
+
+fetch("wells.geojson")
+    .then(res => res.json())
+    .then(data => {
+
+        wellsLayer = L.geoJSON(data, {
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, { icon: wellIcon });
+            },
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup(`
+                    <b>نوع البئر:</b> ${feature.properties.type || "غير معروف"}<br>
+                    <b>العمق:</b> ${feature.properties.depth || "غير متوفر"} متر
+                `);
+            }
+        }).addTo(map);
+
+    });
+
+// -------------------------
+// طبقة الطرق + الحدود + المعالم
+// -------------------------
+
+var layersToLoad = [
+    { file: "roads.geojson", color: "orange", name: "الطرق" },
+    { file: "boundaries.geojson", color: "blue", name: "الحدود" },
+    { file: "landmarks.geojson", color: "green", name: "المعالم" }
+];
+
+layersToLoad.forEach(layerInfo => {
+    fetch(layerInfo.file)
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: { color: layerInfo.color, weight: 2 },
+                onEachFeature: function (feature, layer) {
+                    layer.bindPopup(`
+                        <b>${layerInfo.name}</b><br>
+                        ${JSON.stringify(feature.properties, null, 2)}
+                    `.replace(/\n/g, "<br>"));
+                }
             }).addTo(map);
         });
+});
 
-        // ======================
-        // 4) Toggle Night Mode
-        // ======================
-        let nightMode = false;
-
-        document.getElementById("modeToggle").addEventListener("click", function () {
-
-            if (!nightMode) {
-                map.removeLayer(dayMap);
-                map.addLayer(nightMap);
-
-                this.innerText = "Day Mode";
-                this.style.background = "#eee";
-                this.style.color = "#000";
-
-                nightMode = true;
-
-            } else {
-                map.removeLayer(nightMap);
-                map.addLayer(dayMap);
-
-                this.innerText = "Night Mode";
-                this.style.background = "#222";
-                this.style.color = "#fff";
-
-                nightMode = false;
-            }
-
-        });
-
-    </script>
+</script>
 
 </body>
 </html>
