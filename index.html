@@ -16,17 +16,29 @@
             height: 100vh;
             width: 100%;
         }
-        .legend {
-            padding: 10px;
-            background: white;
-            line-height: 18px;
-            border-radius: 6px;
-            box-shadow: 0 0 6px #999;
-        }
     </style>
 </head>
 
 <body>
+
+    <!-- Night Mode Button -->
+    <button id="modeToggle" 
+    style="
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 9999;
+        background: #222;
+        color: #fff;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    ">
+        Night Mode
+    </button>
+
     <div id="map"></div>
 
     <!-- Leaflet JS -->
@@ -38,15 +50,22 @@
         // ======================
         var map = L.map('map').setView([31.9, 35.2], 13);
 
-        // Base Map Layer
-        var basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        // ======================
+        // Base Maps (Day/Night)
+        // ======================
+        var dayMap = L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            { maxZoom: 19 }
+        ).addTo(map);
+
+        var nightMap = L.tileLayer(
+            "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+            { maxZoom: 19 }
+        );
 
         // ======================
-        // 2) Function: Load GeoJSON
-        // With full popup attributes table
+        // 2) Load GeoJSON Function
+        // with full attribute popup
         // ======================
         function loadGeoJSON(file, style = {}) {
             return fetch(file)
@@ -56,41 +75,32 @@
                         style: style,
                         onEachFeature: function (feature, layer) {
 
-                            // Create HTML table with attributes
-                            let info = "<b>Attributes:</b><br><table style='width:100%; border-collapse: collapse;'>";
+                            let html = "<b>Attributes:</b><br><table style='width:100%; border-collapse: collapse;'>";
 
-                            for (let key in feature.properties) {
-                                info += `
-                                    <tr>
-                                        <td style="border:1px solid #ccc; padding:4px;"><b>${key}</b></td>
-                                        <td style="border:1px solid #ccc; padding:4px;">${feature.properties[key]}</td>
-                                    </tr>
-                                `;
+                            for (let k in feature.properties) {
+                                html += `
+                                <tr>
+                                    <td style='border:1px solid #ccc; padding:4px;'><b>${k}</b></td>
+                                    <td style='border:1px solid #ccc; padding:4px;'>${feature.properties[k]}</td>
+                                </tr>`;
                             }
 
-                            info += "</table>";
+                            html += "</table>";
 
-                            // Bind popup
-                            layer.bindPopup(info);
-
-                            // Optionally log attributes in console
-                            layer.on("click", function () {
-                                console.log("Feature Properties:", feature.properties);
-                            });
+                            layer.bindPopup(html);
                         }
                     });
                 });
         }
 
         // ======================
-        // 3) Load All Layers
+        // 3) Load all layers (slope removed)
         // ======================
         Promise.all([
-            loadGeoJSON("ramallah.json", { color: "#222", weight: 2 }),
+            loadGeoJSON("ramallah.json", { color: "#222", weight: 3, fillOpacity: 0 }),
             loadGeoJSON("built_up.json", { color: "#ff7800", weight: 1, fillOpacity: 0.5 }),
             loadGeoJSON("roods.json", { color: "#0066ff", weight: 2 }),
             loadGeoJSON("schools.json", { color: "red" }),
-            loadGeoJSON("slope.json", { color: "#228B22", weight: 1 }),
             loadGeoJSON("wells.json", { color: "blue" }),
             loadGeoJSON("natural.json", { color: "#008000", weight: 1, fillOpacity: 0.4 })
         ]).then(function (layers) {
@@ -99,44 +109,51 @@
             var built_up = layers[1].addTo(map);
             var roads = layers[2].addTo(map);
             var schools = layers[3].addTo(map);
-            var slope = layers[4].addTo(map);
-            var wells = layers[5].addTo(map);
-            var natural = layers[6].addTo(map);
+            var wells = layers[4].addTo(map);
+            var natural = layers[5].addTo(map);
+
+            // Always push boundary to bottom
+            ramallah.bringToBack();
 
             // Layer Control
-            var overlays = {
+            L.control.layers(null, {
                 "Ramallah Boundary": ramallah,
                 "Built-up Areas": built_up,
                 "Road Network": roads,
                 "Schools": schools,
-                "Slope": slope,
                 "Wells": wells,
                 "Natural Areas": natural
-            };
-            L.control.layers(null, overlays).addTo(map);
+            }).addTo(map);
+        });
 
-            // ==============================
-            // 4) Simple Suitability Layer (demo)
-            // ==============================
-            var suitabilityStyle = {
-                color: "green",
-                fillColor: "lightgreen",
-                weight: 1,
-                fillOpacity: 0.4
-            };
+        // ======================
+        // 4) Toggle Night Mode
+        // ======================
+        let nightMode = false;
 
-            var suitabilityLayer = L.geoJSON(null, suitabilityStyle);
+        document.getElementById("modeToggle").addEventListener("click", function () {
 
-            // Add built-up areas as a mock "suitable" zone
-            built_up.eachLayer(function (layer) {
-                suitabilityLayer.addData(layer.toGeoJSON());
-            });
+            if (!nightMode) {
+                map.removeLayer(dayMap);
+                map.addLayer(nightMap);
 
-            suitabilityLayer.addTo(map);
+                this.innerText = "Day Mode";
+                this.style.background = "#eee";
+                this.style.color = "#000";
 
-            L.control.layers(null, {
-                "Suitable Areas (Demo)": suitabilityLayer
-            }, { collapsed: false }).addTo(map);
+                nightMode = true;
+
+            } else {
+                map.removeLayer(nightMap);
+                map.addLayer(dayMap);
+
+                this.innerText = "Night Mode";
+                this.style.background = "#222";
+                this.style.color = "#fff";
+
+                nightMode = false;
+            }
+
         });
 
     </script>
