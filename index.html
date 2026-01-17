@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Ramallah Web Map</title>
+<title>Ramallah Web Map - Schools Proximity</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
     body { margin:0; padding:0; }
     #map { width:100%; height:100vh; }
@@ -13,10 +12,10 @@
 </head>
 
 <body>
-
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
 <script>
 // =====================================================
@@ -36,20 +35,18 @@ map.createPane("builtupPane");
 map.getPane("builtupPane").style.zIndex = 400;
 
 map.createPane("wadiPane");
-map.getPane("wadiPane").style.zIndex = 450; // فوق البيلت أب
+map.getPane("wadiPane").style.zIndex = 450;
 
 // =====================================================
-// 2) GEOJSON LOADER (FIXED FOR GITHUB PAGES)
+// 2) GEOJSON LOADER
 // =====================================================
 function loadGeoJSON(file, options = {}) {
-
     return fetch(encodeURI(file))
     .then(res => {
         if (!res.ok) throw new Error(file + " not found");
         return res.json();
     })
     .then(data => {
-
         return L.geoJSON(data, {
             pane: options.pane,
             style: function(feature){
@@ -58,22 +55,21 @@ function loadGeoJSON(file, options = {}) {
                 }
             },
             pointToLayer: function(feature, latlng){
+                // لكل المدارس نقاط افتراضية صغيرة
+                if(options.icon){
+                    return L.marker(latlng, {icon: options.icon});
+                }
                 return L.marker(latlng);
             },
             onEachFeature: function(feature, layer){
                 let html = "<table>";
                 for (let k in feature.properties){
-                    html += `
-                    <tr>
-                        <td><b>${k}</b></td>
-                        <td>${feature.properties[k]}</td>
-                    </tr>`;
+                    html += `<tr><td><b>${k}</b></td><td>${feature.properties[k]}</td></tr>`;
                 }
                 html += "</table>";
                 layer.bindPopup(html);
             }
         });
-
     })
     .catch(err => {
         console.warn(err.message);
@@ -82,72 +78,100 @@ function loadGeoJSON(file, options = {}) {
 }
 
 // =====================================================
-// 3) LOAD ALL LAYERS (OLD + NEW)
+// 3) LOAD ALL LAYERS
 // =====================================================
 Promise.all([
-
-    // الطبقات القديمة
-    loadGeoJSON("ramallah.json", {
-        style:{ color:"#000", weight:3, fillOpacity:0 }
-    }),
-
-    loadGeoJSON("built_up.json", {
-        pane:"builtupPane",
-        style:{ color:"#ff7800", weight:1, fillOpacity:0.6 }
-    }),
-
-    loadGeoJSON("roods.json", {
-        style:{ color:"#0066ff", weight:2 }
-    }),
-
-    loadGeoJSON("natural.json", {
-        style:{ color:"#2e8b57", fillOpacity:0.4 }
-    }),
-
+    loadGeoJSON("ramallah.json", { style:{ color:"#000", weight:3, fillOpacity:0 } }),
+    loadGeoJSON("built_up.json", { pane:"builtupPane", style:{ color:"#ff7800", weight:1, fillOpacity:0.6 } }),
+    loadGeoJSON("roods.json", { style:{ color:"#0066ff", weight:2 } }),
+    loadGeoJSON("natural.json", { style:{ color:"#2e8b57", fillOpacity:0.4 } }),
     loadGeoJSON("schools.json"),
-
-    // الطبقات الجديدة
     loadGeoJSON("Wells.geojson"),
-
-    loadGeoJSON("الودية.geojson", {
-        pane:"wadiPane",
-        style:{
-            color:"#0000ff",
-            weight:3,
-            opacity:1
-        }
-    }),
-
+    loadGeoJSON("الودية.geojson", { pane:"wadiPane", style:{ color:"#0000ff", weight:3, opacity:1 } }),
     loadGeoJSON("البؤر_الاستيطانية.geojson"),
     loadGeoJSON("العيادات.geojson"),
     loadGeoJSON("المواقع_العسكرية.geojson"),
     loadGeoJSON("كسارات.geojson"),
     loadGeoJSON("مستوطنات.geojson")
-
 ]).then(function(layers){
 
+    // =========================
+    // Add all layers to map
+    // =========================
     var overlays = {
         "Ramallah Boundary": layers[0].addTo(map),
         "Built-up Areas": layers[1].addTo(map),
         "Road Network": layers[2].addTo(map),
         "Natural Areas": layers[3].addTo(map),
         "Schools": layers[4].addTo(map),
-
-        "Wells": layers[5],
-        "الأودية": layers[6].addTo(map), // تظهر افتراضياً
-        "البؤر الاستيطانية": layers[7],
-        "العيادات": layers[8],
-        "المواقع العسكرية": layers[9],
-        "كسارات": layers[10],
-        "مستوطنات": layers[11]
+        "Wells": layers[5].addTo(map),
+        "الأودية": layers[6].addTo(map),
+        "البؤر الاستيطانية": layers[7].addTo(map),
+        "العيادات": layers[8].addTo(map),
+        "المواقع العسكرية": layers[9].addTo(map),
+        "كسارات": layers[10].addTo(map),
+        "مستوطنات": layers[11].addTo(map)
     };
-
     L.control.layers(null, overlays).addTo(map);
 
     // Zoom to Ramallah boundary
     map.fitBounds(layers[0].getBounds());
+
+    // =====================================================
+    // 4) PROXIMITY ANALYSIS FOR SCHOOLS
+    // =====================================================
+    var schoolsLayer = layers[4];
+    var roadsLayer = layers[2];
+    var dangerLayer = L.featureGroup([layers[7], layers[11], layers[9]]);
+    var naturalLayer = L.featureGroup([layers[3], layers[6]]);
+    var clinicsLayer = layers[8];
+
+    schoolsLayer.eachLayer(function(schoolMarker){
+        var schoolPoint = schoolMarker.feature;
+
+        // أقرب شارع
+        var minStreetDist = Infinity;
+        roadsLayer.eachLayer(function(road){
+            var dist = turf.pointToLineDistance(schoolPoint, road.feature, {units:'meters'});
+            if(dist < minStreetDist) minStreetDist = dist;
+        });
+
+        // أقرب خطر
+        var minDangerDist = Infinity;
+        dangerLayer.eachLayer(function(danger){
+            var dist = turf.distance(schoolPoint, danger.feature, {units:'meters'});
+            if(dist < minDangerDist) minDangerDist = dist;
+        });
+
+        // أقرب طبيعة
+        var minNaturalDist = Infinity;
+        naturalLayer.eachLayer(function(natural){
+            var dist = turf.distance(schoolPoint, natural.feature, {units:'meters'});
+            if(dist < minNaturalDist) minNaturalDist = dist;
+        });
+
+        // أقرب مركز صحي
+        var minClinicDist = Infinity;
+        clinicsLayer.eachLayer(function(clinic){
+            var dist = turf.distance(schoolPoint, clinic.feature, {units:'meters'});
+            if(dist < minClinicDist) minClinicDist = dist;
+        });
+
+        // حفظ الخصائص الجديدة
+        schoolMarker.feature.properties.distanceToStreet = minStreetDist.toFixed(2) + " m";
+        schoolMarker.feature.properties.distanceToDanger = minDangerDist.toFixed(2) + " m";
+        schoolMarker.feature.properties.distanceToNatural = minNaturalDist.toFixed(2) + " m";
+        schoolMarker.feature.properties.distanceToClinic = minClinicDist.toFixed(2) + " m";
+
+        // تحديث Popup
+        let html = "<table>";
+        for (let k in schoolMarker.feature.properties){
+            html += `<tr><td><b>${k}</b></td><td>${schoolMarker.feature.properties[k]}</td></tr>`;
+        }
+        html += "</table>";
+        schoolMarker.bindPopup(html);
+    });
 });
 </script>
-
 </body>
 </html>
