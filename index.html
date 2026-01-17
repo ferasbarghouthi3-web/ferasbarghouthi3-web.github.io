@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Future Schools Site Suitability - Ramallah</title>
+<title>Ramallah Web Map</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -14,21 +14,6 @@
 
 <body>
 
-<button id="modeToggle"
-style="
-position:absolute;
-top:20px;
-left:20px;
-z-index:9999;
-background:#222;
-color:#fff;
-padding:8px 12px;
-border:none;
-border-radius:6px;
-cursor:pointer;">
-Night Mode
-</button>
-
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -39,24 +24,13 @@ Night Mode
 // =====================================================
 var map = L.map("map").setView([31.9, 35.2], 13);
 
-var dayMap = L.tileLayer(
+L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     { maxZoom: 19 }
 ).addTo(map);
 
-var nightMap = L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-    { maxZoom: 19 }
-);
-
 // =====================================================
-// 1.1) CREATE PANES (IMPORTANT)
-// =====================================================
-map.createPane("valleysPane");
-map.getPane("valleysPane").style.zIndex = 650;
-
-// =====================================================
-// 2) SAFE GEOJSON LOADER (WITH PANE SUPPORT)
+// 2) GEOJSON LOADER
 // =====================================================
 function loadGeoJSON(file, options = {}) {
 
@@ -68,7 +42,6 @@ function loadGeoJSON(file, options = {}) {
     .then(data => {
 
         return L.geoJSON(data, {
-            pane: options.pane || "overlayPane",
             style: function(feature){
                 if (feature.geometry.type !== "Point" && options.style) {
                     return options.style;
@@ -99,7 +72,7 @@ function loadGeoJSON(file, options = {}) {
 }
 
 // =====================================================
-// 3) LOAD ALL LAYERS (FINAL VERSION)
+// 3) LOAD AVAILABLE LAYERS ONLY
 // =====================================================
 Promise.all([
 
@@ -113,7 +86,7 @@ Promise.all([
         style:{ color:"#ff7800", weight:1, fillOpacity:0.5 }
     }),
 
-    // 2 - Road Network
+    // 2 - Roads
     loadGeoJSON("roods.json", {
         style:{ color:"#0066ff", weight:2 }
     }),
@@ -124,43 +97,7 @@ Promise.all([
     }),
 
     // 4 - Schools
-    loadGeoJSON("schools.json"),
-
-    // 5 - Wells
-    loadGeoJSON("Wells_FeaturesToJSON.geojson"),
-
-    // 6 - Valleys (FIXED & VISIBLE)
-    loadGeoJSON("الأودية_FeaturesToJSON.geojson", {
-        pane: "valleysPane",
-        style:{
-            color:"#00ffff",
-            weight:5,
-            opacity:1
-        }
-    }),
-
-    // 7 - Settlement Outposts
-    loadGeoJSON("البؤر_الاستيطانية_FeaturesToJSO.geojson", {
-        style:{ color:"#ff1493", weight:2, fillOpacity:0.6 }
-    }),
-
-    // 8 - Clinics
-    loadGeoJSON("العيادات_FeaturesToJSON.geojson"),
-
-    // 9 - Military Sites
-    loadGeoJSON("المواقع_العسكر_FeaturesToJSO.geojson", {
-        style:{ color:"#555", weight:2, fillOpacity:0.6 }
-    }),
-
-    // 10 - Quarries
-    loadGeoJSON("كسارات_FeaturesToJSON.geojson", {
-        style:{ color:"#8b4513", weight:2, fillOpacity:0.6 }
-    }),
-
-    // 11 - Settlements
-    loadGeoJSON("مستوطنات_FeaturesToJSO.geojson", {
-        style:{ color:"#ff0000", weight:2, fillOpacity:0.5 }
-    })
+    loadGeoJSON("schools.json")
 
 ]).then(function(layers){
 
@@ -169,37 +106,14 @@ Promise.all([
         "Built-up Areas": layers[1].addTo(map),
         "Road Network": layers[2].addTo(map),
         "Natural Areas": layers[3].addTo(map),
-        "Schools": layers[4].addTo(map),
-        "Wells": layers[5],
-        "Valleys": layers[6],
-        "Settlement Outposts": layers[7],
-        "Clinics": layers[8],
-        "Military Sites": layers[9],
-        "Quarries": layers[10],
-        "Settlements": layers[11]
+        "Schools": layers[4].addTo(map)
     };
 
     L.control.layers(null, overlays).addTo(map);
+
+    // Zoom to Ramallah boundary
     map.fitBounds(layers[0].getBounds());
 });
-
-// =====================================================
-// 4) NIGHT MODE
-// =====================================================
-let night = false;
-document.getElementById("modeToggle").onclick = function(){
-    if(!night){
-        map.removeLayer(dayMap);
-        map.addLayer(nightMap);
-        this.innerText = "Day Mode";
-        night = true;
-    } else {
-        map.removeLayer(nightMap);
-        map.addLayer(dayMap);
-        this.innerText = "Night Mode";
-        night = false;
-    }
-};
 </script>
 
 </body>
