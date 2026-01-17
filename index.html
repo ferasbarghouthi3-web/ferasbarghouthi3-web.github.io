@@ -72,47 +72,36 @@ function loadGeoJSON(file, options = {}) {
 }
 
 // =====================================================
-// 3) LOAD AVAILABLE LAYERS ONLY
+// 3) LOAD ALL LAYERS
 // =====================================================
 Promise.all([
 
-    // 0 - Ramallah Boundary
-    loadGeoJSON("ramallah.json", {
-        style:{ color:"#000", weight:3, fillOpacity:0 }
-    }),
-
-    // 1 - Built-up Areas
-    loadGeoJSON("built_up.json", {
-        style:{ color:"#ff7800", weight:1, fillOpacity:0.5 }
-    }),
-
-    // 2 - Roads
-    loadGeoJSON("roods.json", {
-        style:{ color:"#0066ff", weight:2 }
-    }),
-
-    // 3 - Natural Areas
-    loadGeoJSON("natural.json", {
-        style:{ color:"#2e8b57", fillOpacity:0.4 }
-    }),
-
-    // 4 - Schools
-    loadGeoJSON("schools.json")
+    loadGeoJSON("Wells.geojson"),
+    loadGeoJSON("الودية.geojson"),
+    loadGeoJSON("البؤر_الاستيطانية.geojson"),
+    loadGeoJSON("العيادات.geojson"),
+    loadGeoJSON("المواقع_العسكرية.geojson"),
+    loadGeoJSON("كسارات.geojson"),
+    loadGeoJSON("مستوطنات.geojson")
 
 ]).then(function(layers){
 
     var overlays = {
-        "Ramallah Boundary": layers[0].addTo(map),
-        "Built-up Areas": layers[1].addTo(map),
-        "Road Network": layers[2].addTo(map),
-        "Natural Areas": layers[3].addTo(map),
-        "Schools": layers[4].addTo(map)
+        "Wells": layers[0].addTo(map),
+        "الودية": layers[1],
+        "البؤر الاستيطانية": layers[2],
+        "العيادات": layers[3],
+        "المواقع العسكرية": layers[4],
+        "كسارات": layers[5],
+        "مستوطنات": layers[6]
     };
 
     L.control.layers(null, overlays).addTo(map);
 
-    // Zoom to Ramallah boundary
-    map.fitBounds(layers[0].getBounds());
+    // Zoom to first layer if exists
+    if (layers[0].getBounds().isValid()) {
+        map.fitBounds(layers[0].getBounds());
+    }
 });
 </script>
 
