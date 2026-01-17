@@ -29,7 +29,7 @@ L.tileLayer(
 ).addTo(map);
 
 // =====================================================
-// 1.1) PANES (layer order control)
+// 1.1) PANES
 // =====================================================
 map.createPane("builtupPane");
 map.getPane("builtupPane").style.zIndex = 400;
@@ -55,10 +55,6 @@ function loadGeoJSON(file, options = {}) {
                 }
             },
             pointToLayer: function(feature, latlng){
-                // لكل المدارس نقاط افتراضية صغيرة
-                if(options.icon){
-                    return L.marker(latlng, {icon: options.icon});
-                }
                 return L.marker(latlng);
             },
             onEachFeature: function(feature, layer){
@@ -114,11 +110,10 @@ Promise.all([
     };
     L.control.layers(null, overlays).addTo(map);
 
-    // Zoom to Ramallah boundary
     map.fitBounds(layers[0].getBounds());
 
     // =====================================================
-    // 4) PROXIMITY ANALYSIS FOR SCHOOLS
+    // 4) PROXIMITY ANALYSIS FOR SCHOOLS WITH LINES
     // =====================================================
     var schoolsLayer = layers[4];
     var roadsLayer = layers[2];
@@ -129,49 +124,85 @@ Promise.all([
     schoolsLayer.eachLayer(function(schoolMarker){
         var schoolPoint = schoolMarker.feature;
 
+        // ----------------------------
+        // Helper function: find closest feature and return its coordinates
+        // ----------------------------
+        function findClosest(layerGroup, pointFeature, isLine=false){
+            var minDist = Infinity;
+            var closestCoord = null;
+
+            layerGroup.eachLayer(function(l){
+                var dist;
+                if(isLine){
+                    dist = turf.pointToLineDistance(pointFeature, l.feature, {units:'meters'});
+                    // لإيجاد أقرب نقطة على الخط
+                    var snapped = turf.nearestPointOnLine(l.feature, pointFeature);
+                    var coords = snapped.geometry.coordinates;
+                    if(dist < minDist){
+                        minDist = dist;
+                        closestCoord = coords;
+                    }
+                } else {
+                    dist = turf.distance(pointFeature, l.feature, {units:'meters'});
+                    var coords = l.feature.geometry.coordinates;
+                    if(dist < minDist){
+                        minDist = dist;
+                        closestCoord = coords;
+                        minDist = dist;
+                    }
+                }
+            });
+            return {distance: minDist, coord: closestCoord};
+        }
+
         // أقرب شارع
-        var minStreetDist = Infinity;
-        roadsLayer.eachLayer(function(road){
-            var dist = turf.pointToLineDistance(schoolPoint, road.feature, {units:'meters'});
-            if(dist < minStreetDist) minStreetDist = dist;
-        });
-
+        var street = findClosest(roadsLayer, schoolPoint, true);
         // أقرب خطر
-        var minDangerDist = Infinity;
-        dangerLayer.eachLayer(function(danger){
-            var dist = turf.distance(schoolPoint, danger.feature, {units:'meters'});
-            if(dist < minDangerDist) minDangerDist = dist;
-        });
-
+        var danger = findClosest(dangerLayer, schoolPoint);
         // أقرب طبيعة
-        var minNaturalDist = Infinity;
-        naturalLayer.eachLayer(function(natural){
-            var dist = turf.distance(schoolPoint, natural.feature, {units:'meters'});
-            if(dist < minNaturalDist) minNaturalDist = dist;
-        });
-
+        var natural = findClosest(naturalLayer, schoolPoint);
         // أقرب مركز صحي
-        var minClinicDist = Infinity;
-        clinicsLayer.eachLayer(function(clinic){
-            var dist = turf.distance(schoolPoint, clinic.feature, {units:'meters'});
-            if(dist < minClinicDist) minClinicDist = dist;
-        });
+        var clinic = findClosest(clinicsLayer, schoolPoint);
 
-        // حفظ الخصائص الجديدة
-        schoolMarker.feature.properties.distanceToStreet = minStreetDist.toFixed(2) + " m";
-        schoolMarker.feature.properties.distanceToDanger = minDangerDist.toFixed(2) + " m";
-        schoolMarker.feature.properties.distanceToNatural = minNaturalDist.toFixed(2) + " m";
-        schoolMarker.feature.properties.distanceToClinic = minClinicDist.toFixed(2) + " m";
+        // ----------------------------
+        // حفظ الخصائص
+        // ----------------------------
+        schoolMarker.feature.properties.distanceToStreet = street.distance.toFixed(2) + " m";
+        schoolMarker.feature.properties.distanceToDanger = danger.distance.toFixed(2) + " m";
+        schoolMarker.feature.properties.distanceToNatural = natural.distance.toFixed(2) + " m";
+        schoolMarker.feature.properties.distanceToClinic = clinic.distance.toFixed(2) + " m";
 
+        // ----------------------------
         // تحديث Popup
+        // ----------------------------
         let html = "<table>";
         for (let k in schoolMarker.feature.properties){
             html += `<tr><td><b>${k}</b></td><td>${schoolMarker.feature.properties[k]}</td></tr>`;
         }
         html += "</table>";
         schoolMarker.bindPopup(html);
+
+        // ----------------------------
+        // رسم خطوط توضيحية
+        // ----------------------------
+        function drawLine(coord, color){
+            if(coord){
+                L.polyline([
+                    [schoolPoint.geometry.coordinates[1], schoolPoint.geometry.coordinates[0]],
+                    [coord[1], coord[0]]
+                ], {color: color, weight:2, dashArray:'5,5'}).addTo(map);
+            }
+        }
+
+        drawLine(street.coord, "#ff6600");    // برتقالي = شارع
+        drawLine(danger.coord, "#ff0000");    // أحمر = خطر
+        drawLine(natural.coord, "#00cc00");   // أخضر = طبيعة
+        drawLine(clinic.coord, "#0000ff");    // أزرق = مركز صحي
+
     });
+
 });
 </script>
 </body>
 </html>
+
