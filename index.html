@@ -50,25 +50,7 @@ var nightMap = L.tileLayer(
 );
 
 // =====================================================
-// 2) ICONS
-// =====================================================
-var schoolIcon = L.icon({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/1670/1670614.png",
-    iconSize: [30,30]
-});
-
-var wellIcon = L.icon({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/727/727790.png",
-    iconSize: [26,26]
-});
-
-var clinicIcon = L.icon({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/2966/2966487.png",
-    iconSize: [24,24]
-});
-
-// =====================================================
-// 3) SAFE GEOJSON LOADER
+// 2) SAFE GEOJSON LOADER (POINT / LINE / POLYGON)
 // =====================================================
 function loadGeoJSON(file, options = {}) {
 
@@ -80,16 +62,22 @@ function loadGeoJSON(file, options = {}) {
     .then(data => {
 
         return L.geoJSON(data, {
-            style: options.style,
+            style: function(feature){
+                if (feature.geometry.type !== "Point" && options.style) {
+                    return options.style;
+                }
+            },
             pointToLayer: function(feature, latlng){
-                if(options.icon){
-                    return L.marker(latlng, {icon: options.icon});
+                // Default marker for ALL points (schools, wells, clinics)
+                if (feature.geometry.type === "Point") {
+                    return L.marker(latlng);
                 }
             },
             onEachFeature: function(feature, layer){
                 let html = "<table>";
-                for(let k in feature.properties){
-                    html += `<tr>
+                for (let k in feature.properties){
+                    html += `
+                    <tr>
                         <td><b>${k}</b></td>
                         <td>${feature.properties[k]}</td>
                     </tr>`;
@@ -107,56 +95,50 @@ function loadGeoJSON(file, options = {}) {
 }
 
 // =====================================================
-// 4) LOAD ALL LAYERS (MATCHING FILE NAMES EXACTLY)
+// 3) LOAD ALL LAYERS (MATCH FILE NAMES EXACTLY)
 // =====================================================
 Promise.all([
 
     loadGeoJSON("ramallah.json", {
-        style:{color:"#000", weight:3, fillOpacity:0}
+        style:{ color:"#000", weight:3, fillOpacity:0 }
     }),
 
     loadGeoJSON("built_up.json", {
-        style:{color:"#ff7800", weight:1, fillOpacity:0.5}
+        style:{ color:"#ff7800", weight:1, fillOpacity:0.5 }
     }),
 
     loadGeoJSON("roods.json", {
-        style:{color:"#0066ff", weight:2}
+        style:{ color:"#0066ff", weight:2 }
     }),
 
     loadGeoJSON("natural.json", {
-        style:{color:"#2e8b57", fillOpacity:0.4}
+        style:{ color:"#2e8b57", fillOpacity:0.4 }
     }),
 
-    loadGeoJSON("schools.json", {
-        icon: schoolIcon
-    }),
+    loadGeoJSON("schools.json"),
 
-    loadGeoJSON("Wells_FeaturesToJSON.geojson", {
-        icon: wellIcon
-    }),
+    loadGeoJSON("Wells_FeaturesToJSON.geojson"),
 
     loadGeoJSON("الوديه_FeaturesToJSON.geojson", {
-        style:{color:"#00bfff", weight:2}
+        style:{ color:"#0099ff", weight:3 }
     }),
 
     loadGeoJSON("البرك_الاستيطانية_FeaturesToJSO.geojson", {
-        style:{color:"#8b0000", fillOpacity:0.5}
+        style:{ color:"#8b0000", weight:2, fillOpacity:0.5 }
     }),
 
-    loadGeoJSON("العيادات_FeaturesToJSON.geojson", {
-        icon: clinicIcon
-    }),
+    loadGeoJSON("العيادات_FeaturesToJSON.geojson"),
 
     loadGeoJSON("المواقع_العسكر_FeaturesToJSO.geojson", {
-        style:{color:"#555", fillOpacity:0.6}
+        style:{ color:"#555", weight:2, fillOpacity:0.6 }
     }),
 
     loadGeoJSON("كسارات_FeaturesToJSON.geojson", {
-        style:{color:"#a0522d", fillOpacity:0.6}
+        style:{ color:"#8b4513", weight:2, fillOpacity:0.6 }
     }),
 
     loadGeoJSON("مستوطنات_FeaturesToJSON.geojson", {
-        style:{color:"#ff0000", fillOpacity:0.5}
+        style:{ color:"#ff0000", weight:2, fillOpacity:0.5 }
     })
 
 ]).then(function(layers){
@@ -180,7 +162,7 @@ Promise.all([
 });
 
 // =====================================================
-// 5) NIGHT MODE
+// 4) NIGHT MODE
 // =====================================================
 let night = false;
 document.getElementById("modeToggle").onclick = function(){
