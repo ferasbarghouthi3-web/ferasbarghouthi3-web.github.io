@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Future Schools Site Suitability - Ramallah</title>
+<meta charset="utf-8">
+<title>Future Schools Site Suitability - Ramallah</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-    <style>
-        body { margin: 0; padding: 0; }
-        #map { height: 100vh; width: 100%; }
-    </style>
+<style>
+    body { margin:0; padding:0; }
+    #map { width:100%; height:100vh; }
+</style>
 </head>
 
 <body>
@@ -34,111 +34,163 @@ Night Mode
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-
-var map = L.map('map').setView([31.9, 35.2], 13);
+// =====================================================
+// 1) MAP INITIALIZATION
+// =====================================================
+var map = L.map("map").setView([31.9, 35.2], 13);
 
 var dayMap = L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  { maxZoom: 19 }
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19 }
 ).addTo(map);
 
 var nightMap = L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-  { maxZoom: 19 }
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+    { maxZoom: 19 }
 );
 
-// ---------------- ICONS ----------------
+// =====================================================
+// 2) ICONS
+// =====================================================
 var schoolIcon = L.icon({
     iconUrl: "https://cdn-icons-png.flaticon.com/512/1670/1670614.png",
-    iconSize: [32, 32]
+    iconSize: [30,30]
 });
 
 var wellIcon = L.icon({
     iconUrl: "https://cdn-icons-png.flaticon.com/512/727/727790.png",
-    iconSize: [28, 28]
+    iconSize: [26,26]
 });
 
-// ------------- GENERAL LOADER -------------
-function loadGeoJSON(file, style = {}, isPoint = false, icon = null) {
+// =====================================================
+// 3) SAFE GEOJSON LOADER (لا يوقف الخريطة عند الخطأ)
+// =====================================================
+function loadGeoJSON(file, options = {}) {
+
     return fetch(file)
-        .then(res => res.json())
-        .then(data => {
-            return L.geoJSON(data, {
-                style: style,
-                pointToLayer: function (feature, latlng) {
-                    if (isPoint && icon) {
-                        return L.marker(latlng, { icon: icon });
-                    }
-                },
-                onEachFeature: function (feature, layer) {
-                    let html = "<table style='width:100%'>";
-                    for (let k in feature.properties) {
-                        html += `<tr>
-                            <td><b>${k}</b></td>
-                            <td>${feature.properties[k]}</td>
-                        </tr>`;
-                    }
-                    html += "</table>";
-                    layer.bindPopup(html);
+    .then(res => {
+        if (!res.ok) throw new Error(file + " not found");
+        return res.json();
+    })
+    .then(data => {
+
+        return L.geoJSON(data, {
+            style: options.style,
+            pointToLayer: function(feature, latlng){
+                if(options.icon){
+                    return L.marker(latlng, {icon: options.icon});
                 }
-            });
+            },
+            onEachFeature: function(feature, layer){
+                let html = "<table>";
+                for(let k in feature.properties){
+                    html += `<tr><td><b>${k}</b></td><td>${feature.properties[k]}</td></tr>`;
+                }
+                html += "</table>";
+                layer.bindPopup(html);
+            }
         });
+
+    })
+    .catch(err => {
+        console.warn(err.message);
+        return L.layerGroup(); // طبقة فارغة بدل كسر الخريطة
+    });
 }
 
-// ---------------- LOAD ALL LAYERS ----------------
+// =====================================================
+// 4) LOAD ALL LAYERS
+// =====================================================
 Promise.all([
 
-    loadGeoJSON("ramallah.json", {color:"#000", weight:3, fillOpacity:0}),
-    loadGeoJSON("built_up.json", {color:"#ff7800", weight:1, fillOpacity:0.5}),
-    loadGeoJSON("roods.json", {color:"#0066ff", weight:2}),
-    loadGeoJSON("natural.json", {color:"#2e8b57", fillOpacity:0.4}),
+    loadGeoJSON("ramallah.json", {
+        style:{color:"#000", weight:3, fillOpacity:0}
+    }),
 
-    loadGeoJSON("schools.json", {}, true, schoolIcon),
-    loadGeoJSON("Wells_FeaturesToJSON.geojson", {}, true, wellIcon),
+    loadGeoJSON("built_up.json", {
+        style:{color:"#ff7800", weight:1, fillOpacity:0.5}
+    }),
 
-    loadGeoJSON("الوديه_FeaturesToJSON.geojson", {color:"#00bfff", weight:2}),
-    loadGeoJSON("البرك_الاستيطانية_FeaturesToJSO.geojson", {color:"#8b0000", fillOpacity:0.5}),
-    loadGeoJSON("العيادات_FeaturesToJSON.geojson", {}, true),
-    loadGeoJSON("المواقع_العسكر_FeaturesToJSO.geojson", {color:"#555", fillOpacity:0.6}),
-    loadGeoJSON("كسارات_FeaturesToJSON.geojson", {color:"#a0522d", fillOpacity:0.6}),
-    loadGeoJSON("مستوطنات_FeaturesToJSON.geojson", {color:"#ff0000", fillOpacity:0.5})
+    loadGeoJSON("roods.json", {
+        style:{color:"#0066ff", weight:2}
+    }),
 
-]).then(function(layers){
+    loadGeoJSON("natural.json", {
+        style:{color:"#2e8b57", fillOpacity:0.4}
+    }),
+
+    loadGeoJSON("schools.json", {
+        icon: schoolIcon
+    }),
+
+    loadGeoJSON("Wells_FeaturesToJSON.geojson", {
+        icon: wellIcon
+    }),
+
+    loadGeoJSON("الوديه_FeaturesToJSON.geojson", {
+        style:{color:"#00bfff", weight:2}
+    }),
+
+    loadGeoJSON("البرك_الاستيطانية_FeaturesToJSO.geojson", {
+        style:{color:"#8b0000", fillOpacity:0.5}
+    }),
+
+    loadGeoJSON("العيادات_FeaturesToJSON.geojson", {
+        icon: L.icon({
+            iconUrl:"https://cdn-icons-png.flaticon.com/512/2966/2966487.png",
+            iconSize:[24,24]
+        })
+    }),
+
+    loadGeoJSON("المواقع_العسكر_FeaturesToJSO.geojson", {
+        style:{color:"#555", fillOpacity:0.6}
+    }),
+
+    loadGeoJSON("كسارات_FeaturesToJSON.geojson", {
+        style:{color:"#a0522d", fillOpacity:0.6}
+    }),
+
+    loadGeoJSON("مستوطنات_FeaturesToJSON.geojson", {
+        style:{color:"#ff0000", fillOpacity:0.5}
+    })
+
+]).then(function(l){
 
     var overlays = {
-        "Ramallah Boundary": layers[0].addTo(map),
-        "Built-up Areas": layers[1].addTo(map),
-        "Roads": layers[2].addTo(map),
-        "Natural Areas": layers[3].addTo(map),
-        "Schools": layers[4].addTo(map),
-        "Wells": layers[5],
-        "Valleys": layers[6],
-        "Settlement Outposts": layers[7],
-        "Clinics": layers[8],
-        "Military Sites": layers[9],
-        "Quarries": layers[10],
-        "Settlements": layers[11]
+        "Ramallah Boundary": l[0].addTo(map),
+        "Built-up Areas": l[1].addTo(map),
+        "Roads": l[2].addTo(map),
+        "Natural Areas": l[3].addTo(map),
+        "Schools": l[4].addTo(map),
+        "Wells": l[5],
+        "Valleys": l[6],
+        "Settlement Ponds": l[7],
+        "Clinics": l[8],
+        "Military Sites": l[9],
+        "Quarries": l[10],
+        "Settlements": l[11]
     };
 
     L.control.layers(null, overlays).addTo(map);
 });
 
-// ---------------- NIGHT MODE ----------------
-let nightMode = false;
+// =====================================================
+// 5) NIGHT MODE
+// =====================================================
+let night = false;
 document.getElementById("modeToggle").onclick = function(){
-    if(!nightMode){
+    if(!night){
         map.removeLayer(dayMap);
         map.addLayer(nightMap);
         this.innerText = "Day Mode";
-        nightMode = true;
+        night = true;
     } else {
         map.removeLayer(nightMap);
         map.addLayer(dayMap);
         this.innerText = "Night Mode";
-        nightMode = false;
+        night = false;
     }
 };
-
 </script>
 
 </body>
