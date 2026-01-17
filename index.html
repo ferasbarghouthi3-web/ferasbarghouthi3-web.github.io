@@ -30,7 +30,7 @@ L.tileLayer(
 ).addTo(map);
 
 // =====================================================
-// 1.1) PANES (للتحكم بالترتيب)
+// 1.1) PANES (layer order control)
 // =====================================================
 map.createPane("builtupPane");
 map.getPane("builtupPane").style.zIndex = 400;
@@ -39,11 +39,11 @@ map.createPane("wadiPane");
 map.getPane("wadiPane").style.zIndex = 450; // فوق البيلت أب
 
 // =====================================================
-// 2) GEOJSON LOADER
+// 2) GEOJSON LOADER (FIXED FOR GITHUB PAGES)
 // =====================================================
 function loadGeoJSON(file, options = {}) {
 
-    return fetch(file)
+    return fetch(encodeURI(file))
     .then(res => {
         if (!res.ok) throw new Error(file + " not found");
         return res.json();
@@ -92,7 +92,7 @@ Promise.all([
     }),
 
     loadGeoJSON("built_up.json", {
-        pane: "builtupPane",
+        pane:"builtupPane",
         style:{ color:"#ff7800", weight:1, fillOpacity:0.6 }
     }),
 
@@ -108,10 +108,9 @@ Promise.all([
 
     // الطبقات الجديدة
     loadGeoJSON("Wells.geojson"),
-    
-    // الأودية (مهمة)
+
     loadGeoJSON("الودية.geojson", {
-        pane: "wadiPane",
+        pane:"wadiPane",
         style:{
             color:"#0000ff",
             weight:3,
@@ -134,9 +133,8 @@ Promise.all([
         "Natural Areas": layers[3].addTo(map),
         "Schools": layers[4].addTo(map),
 
-        // الجديدة
         "Wells": layers[5],
-        "الأودية": layers[6].addTo(map), // ⬅️ تظهر افتراضياً
+        "الأودية": layers[6].addTo(map), // تظهر افتراضياً
         "البؤر الاستيطانية": layers[7],
         "العيادات": layers[8],
         "المواقع العسكرية": layers[9],
