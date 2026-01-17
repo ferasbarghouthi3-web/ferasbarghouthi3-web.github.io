@@ -62,8 +62,13 @@ var wellIcon = L.icon({
     iconSize: [26,26]
 });
 
+var clinicIcon = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/2966/2966487.png",
+    iconSize: [24,24]
+});
+
 // =====================================================
-// 3) SAFE GEOJSON LOADER (لا يوقف الخريطة عند الخطأ)
+// 3) SAFE GEOJSON LOADER
 // =====================================================
 function loadGeoJSON(file, options = {}) {
 
@@ -84,7 +89,10 @@ function loadGeoJSON(file, options = {}) {
             onEachFeature: function(feature, layer){
                 let html = "<table>";
                 for(let k in feature.properties){
-                    html += `<tr><td><b>${k}</b></td><td>${feature.properties[k]}</td></tr>`;
+                    html += `<tr>
+                        <td><b>${k}</b></td>
+                        <td>${feature.properties[k]}</td>
+                    </tr>`;
                 }
                 html += "</table>";
                 layer.bindPopup(html);
@@ -94,12 +102,12 @@ function loadGeoJSON(file, options = {}) {
     })
     .catch(err => {
         console.warn(err.message);
-        return L.layerGroup(); // طبقة فارغة بدل كسر الخريطة
+        return L.layerGroup();
     });
 }
 
 // =====================================================
-// 4) LOAD ALL LAYERS
+// 4) LOAD ALL LAYERS (MATCHING FILE NAMES EXACTLY)
 // =====================================================
 Promise.all([
 
@@ -136,10 +144,7 @@ Promise.all([
     }),
 
     loadGeoJSON("العيادات_FeaturesToJSON.geojson", {
-        icon: L.icon({
-            iconUrl:"https://cdn-icons-png.flaticon.com/512/2966/2966487.png",
-            iconSize:[24,24]
-        })
+        icon: clinicIcon
     }),
 
     loadGeoJSON("المواقع_العسكر_FeaturesToJSO.geojson", {
@@ -154,21 +159,21 @@ Promise.all([
         style:{color:"#ff0000", fillOpacity:0.5}
     })
 
-]).then(function(l){
+]).then(function(layers){
 
     var overlays = {
-        "Ramallah Boundary": l[0].addTo(map),
-        "Built-up Areas": l[1].addTo(map),
-        "Roads": l[2].addTo(map),
-        "Natural Areas": l[3].addTo(map),
-        "Schools": l[4].addTo(map),
-        "Wells": l[5],
-        "Valleys": l[6],
-        "Settlement Ponds": l[7],
-        "Clinics": l[8],
-        "Military Sites": l[9],
-        "Quarries": l[10],
-        "Settlements": l[11]
+        "Ramallah Boundary": layers[0].addTo(map),
+        "Built-up Areas": layers[1].addTo(map),
+        "Road Network": layers[2].addTo(map),
+        "Natural Areas": layers[3].addTo(map),
+        "Schools": layers[4].addTo(map),
+        "Wells": layers[5],
+        "Valleys": layers[6],
+        "Settlement Ponds": layers[7],
+        "Clinics": layers[8],
+        "Military Sites": layers[9],
+        "Quarries": layers[10],
+        "Settlements": layers[11]
     };
 
     L.control.layers(null, overlays).addTo(map);
