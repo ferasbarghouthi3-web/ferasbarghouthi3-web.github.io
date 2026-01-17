@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <title>Future Schools Site Suitability - Ramallah</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
 
 <style>
     body { margin:0; padding:0; }
@@ -50,7 +53,7 @@ var nightMap = L.tileLayer(
 );
 
 // =====================================================
-// 2) SAFE GEOJSON LOADER (POINT / LINE / POLYGON)
+// 2) SAFE GEOJSON LOADER
 // =====================================================
 function loadGeoJSON(file, options = {}) {
 
@@ -68,10 +71,7 @@ function loadGeoJSON(file, options = {}) {
                 }
             },
             pointToLayer: function(feature, latlng){
-                // Default marker for ALL points (schools, wells, clinics)
-                if (feature.geometry.type === "Point") {
-                    return L.marker(latlng);
-                }
+                return L.marker(latlng);
             },
             onEachFeature: function(feature, layer){
                 let html = "<table>";
@@ -95,7 +95,7 @@ function loadGeoJSON(file, options = {}) {
 }
 
 // =====================================================
-// 3) LOAD ALL LAYERS (MATCH FILE NAMES EXACTLY)
+// 3) LOAD ALL LAYERS (MATCHING YOUR FILES)
 // =====================================================
 Promise.all([
 
@@ -119,7 +119,7 @@ Promise.all([
 
     loadGeoJSON("Wells_FeaturesToJSON.geojson"),
 
-    loadGeoJSON("الوديه_FeaturesToJSON.geojson", {
+    loadGeoJSON("الأودية_FeaturesToJSON.geojson", {
         style:{ color:"#0099ff", weight:3 }
     }),
 
@@ -137,7 +137,7 @@ Promise.all([
         style:{ color:"#8b4513", weight:2, fillOpacity:0.6 }
     }),
 
-    loadGeoJSON("مستوطنات_FeaturesToJSON.geojson", {
+    loadGeoJSON("مستوطنات_FeaturesToJSO.geojson", {
         style:{ color:"#ff0000", weight:2, fillOpacity:0.5 }
     })
 
@@ -159,10 +159,13 @@ Promise.all([
     };
 
     L.control.layers(null, overlays).addTo(map);
+
+    // Fit map to Ramallah boundary
+    map.fitBounds(layers[0].getBounds());
 });
 
 // =====================================================
-// 4) NIGHT MODE
+// 4) NIGHT MODE TOGGLE
 // =====================================================
 let night = false;
 document.getElementById("modeToggle").onclick = function(){
