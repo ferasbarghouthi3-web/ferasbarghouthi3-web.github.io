@@ -36,16 +36,16 @@ body { margin:0; font-family:Arial }
 <body>
 
 <div class="header">
-<h3>Decision Support System لتخطيط المدارس – محافظة رام الله</h3>
+  <h3>Decision Support System لتخطيط المدارس – محافظة رام الله</h3>
 </div>
 
 <div id="map"></div>
 
 <div class="dashboard">
-<b>📊 Dashboard</b><br>
-إجمالي التجمعات: <span id="tTotal">0</span><br>
-تجمعات تعاني من نقص: <span id="tDef">0</span><br>
-مواقع مقترحة: <span id="tSites">0</span>
+  <b>📊 Dashboard</b><br>
+  إجمالي التجمعات: <span id="tTotal">0</span><br>
+  تجمعات تعاني من نقص: <span id="tDef">0</span><br>
+  مواقع مقترحة: <span id="tSites">0</span>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -54,113 +54,209 @@ body { margin:0; font-family:Arial }
 
 <script>
 // ================= MAP =================
-var map = L.map("map").setView([31.9,35.2],11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+var map = L.map("map").setView([31.9, 35.2], 11);
 
-// Pane للتجمعات (تحت)
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap"
+}).addTo(map);
+
+// Pane للتجمعات
 map.createPane("tgPane");
 map.getPane("tgPane").style.zIndex = 200;
 
 // ================= LOAD DATA =================
 Promise.all([
- fetch("tgmooat.json").then(r=>r.json()),
- fetch("Ramallah_Schools.json").then(r=>r.json()),
- fetch("roads.json").then(r=>r.json()),
- fetch("built_up.json").then(r=>r.json()),
- fetch("settlements.geojson").then(r=>r.json()),
- fetch("outposts.geojson").then(r=>r.json()),
- fetch("military.geojson").then(r=>r.json()),
- fetch("wadis.geojson").then(r=>r.json()),
- fetch("quarries.geojson").then(r=>r.json()),
- fetch("natural.json").then(r=>r.json()),
- fetch("Wells.geojson").then(r=>r.json()),
- fetch("clinics.geojson").then(r=>r.json()),
- fetch("hospitals.geojson").then(r=>r.json())
+  fetch("التجمعات.json").then(r => r.json()),
+  fetch("schools.json").then(r => r.json()),
+  fetch("roods.json").then(r => r.json()),
+  fetch("built_up.json").then(r => r.json()),
+  fetch("مستوطنات.geojson").then(r => r.json()),
+  fetch("البؤر_الاستيطانية.geojson").then(r => r.json()),
+  fetch("المواقع_العسكرية.geojson").then(r => r.json()),
+  fetch("الأودية.geojson").then(r => r.json()),
+  fetch("كسارات.geojson").then(r => r.json()),
+  fetch("natural.json").then(r => r.json()),
+  fetch("Wells.geojson").then(r => r.json()),
+  fetch("العيادات.geojson").then(r => r.json()),
+  fetch("ramallah.json").then(r => r.json())
 ]).then(init);
 
 // ================= INIT =================
-function init(d){
+function init(d) {
 
-let [tg,schools,roads,built,sett,outp,mil,wad,qua,nat,wells,clin,hosp] = d;
+let [
+  tg,
+  schools,
+  roads,
+  built,
+  sett,
+  outp,
+  mil,
+  wad,
+  qua,
+  nat,
+  wells,
+  clin,
+  hosp
+] = d;
 
-let deficitCount=0, siteCount=0;
+let deficitCount = 0;
+let siteCount = 0;
 
-// ===== DISPLAY ALL LAYERS =====
-L.geoJSON(built,{style:{color:"#999",fillOpacity:0.3}}).addTo(map);
-L.geoJSON(roads,{style:{color:"orange"}}).addTo(map);
-L.geoJSON(sett,{style:{color:"red",fillOpacity:0.4}}).addTo(map);
-L.geoJSON(outp,{style:{color:"darkred"}}).addTo(map);
-L.geoJSON(mil,{style:{color:"black"}}).addTo(map);
-L.geoJSON(wad,{style:{color:"blue"}}).addTo(map);
-L.geoJSON(qua,{style:{color:"brown"}}).addTo(map);
-L.geoJSON(nat,{style:{color:"green"}}).addTo(map);
+// ================= DISPLAY LAYERS =================
+L.geoJSON(built, {
+  style: { color:"#999", fillOpacity:0.3 }
+}).addTo(map);
 
-[wells,clin,hosp].forEach(g=>{
- L.geoJSON(g,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:4})}).addTo(map);
+L.geoJSON(roads, {
+  style: { color:"orange" }
+}).addTo(map);
+
+L.geoJSON(sett, {
+  style: { color:"red", fillOpacity:0.4 }
+}).addTo(map);
+
+L.geoJSON(outp, {
+  style: { color:"darkred" }
+}).addTo(map);
+
+L.geoJSON(mil, {
+  style: { color:"black" }
+}).addTo(map);
+
+L.geoJSON(wad, {
+  style: { color:"blue" }
+}).addTo(map);
+
+L.geoJSON(qua, {
+  style: { color:"brown" }
+}).addTo(map);
+
+L.geoJSON(nat, {
+  style: { color:"green", fillOpacity:0.3 }
+}).addTo(map);
+
+// ===== Points =====
+[wells, clin, hosp].forEach(g => {
+  L.geoJSON(g, {
+    pointToLayer: (f, ll) =>
+      L.circleMarker(ll, { radius:4, color:"purple", fillOpacity:0.8 })
+  }).addTo(map);
 });
 
-L.geoJSON(schools,{
- pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:5,color:"blue"})
+L.geoJSON(schools, {
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:5,color:"blue"})
 }).addTo(map);
 
-// ===== SEARCH =====
-L.Control.geocoder({defaultMarkGeocode:false})
-.on("markgeocode",e=>map.fitBounds(e.geocode.bbox))
+// ================= SEARCH =================
+L.Control.geocoder({ defaultMarkGeocode:false })
+.on("markgeocode", e => map.fitBounds(e.geocode.bbox))
 .addTo(map);
 
-// ===== MAIN ANALYSIS =====
-let tgLayer = L.geoJSON(tg,{
- pane:"tgPane",
- style:f=>{
-   let pop=f.properties["تقديرات_السكان_2020"]||0;
-   let need=Math.ceil(pop/3000);
-   let cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
-   let diff=need-cnt;
-   let c= diff>=2?"red": diff==1?"orange":"green";
-   return {color:"black",fillOpacity:0.3,fillColor:c};
- },
- onEachFeature:(f,l)=>{
-   let pop=f.properties["تقديرات_السكان_2020"]||0;
-   let need=Math.ceil(pop/3000);
-   let cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
-   let deficit=cnt<need;
-   if(deficit) deficitCount++;
+// ================= MAIN ANALYSIS =================
+let tgLayer = L.geoJSON(tg, {
+  pane:"tgPane",
+  style: f => {
+    let pop = f.properties["تقديرات_السكان_2020"] || 0;
+    let need = Math.ceil(pop / 3000);
+    let cnt = schools.features.filter(s =>
+      turf.booleanPointInPolygon(s, f)
+    ).length;
 
-   let html=`<b>${f.properties["اسم_التجمع"]}</b><br>
-   السكان: ${pop}<br>
-   المدارس: ${cnt}<br>
-   المطلوب: ${need}<br>
-   الحالة: ${deficit?"نقص":"مكتفي"}`;
+    let diff = need - cnt;
+    let color = diff >= 2 ? "red" : diff === 1 ? "orange" : "green";
 
-   if(deficit){
-     let c=turf.centroid(f);
-     let farSet=[sett,outp].every(g=>g.features.every(s=>turf.distance(c,s,{units:"km"})>0.8));
-     let safe=[mil,wad,qua,nat].every(g=>g.features.every(x=>!turf.booleanPointInPolygon(c,x)));
-     let insideBuilt=turf.booleanPointInPolygon(c,built);
-     let nearRoad=roads.features.some(r=>turf.distance(c,r,{units:"km"})<0.5);
-     let nearServ=[wells,clin,hosp].some(g=>g.features.some(x=>turf.distance(c,x,{units:"km"})<1));
+    return {
+      color:"black",
+      fillOpacity:0.4,
+      fillColor: color
+    };
+  },
 
-     let score=(insideBuilt?25:0)+(nearRoad?20:0)+(farSet?25:0)+(safe?20:0)+(nearServ?10:0);
-     let price=100+(insideBuilt?30:0)+(nearRoad?20:0)+(nearServ?20:0)+(score>=70?20:0)-(farSet?0:50);
+  onEachFeature: (f, l) => {
 
-     L.marker([c.geometry.coordinates[1],c.geometry.coordinates[0]])
-      .addTo(map)
-      .bindPopup(موقع مقترح<br>Score: ${score}/100<br>السعر: ${price}$);
-     siteCount++;
+    let pop = f.properties["تقديرات_السكان_2020"] || 0;
+    let need = Math.ceil(pop / 3000);
+    let cnt = schools.features.filter(s =>
+      turf.booleanPointInPolygon(s, f)
+    ).length;
 
-     html+=<hr>Score: ${score}/100<br>السعر: ${price}$;
-   }
-   l.bindPopup(html);
- }
+    let deficit = cnt < need;
+    if (deficit) deficitCount++;
+
+    let html = `
+      <b>${f.properties["اسم_التجمع"]}</b><br>
+      السكان: ${pop}<br>
+      المدارس: ${cnt}<br>
+      المطلوب: ${need}<br>
+      الحالة: ${deficit ? "نقص" : "مكتفي"}
+    `;
+
+    if (deficit) {
+
+      let c = turf.centroid(f);
+
+      let farSet = [sett, outp].every(g =>
+        g.features.every(s => turf.distance(c, s, {units:"km"}) > 0.8)
+      );
+
+      let safe = [mil, wad, qua, nat].every(g =>
+        g.features.every(x => !turf.booleanPointInPolygon(c, x))
+      );
+
+      let insideBuilt = turf.booleanPointInPolygon(c, built);
+
+      let nearRoad = roads.features.some(r =>
+        turf.distance(c, r, {units:"km"}) < 0.5
+      );
+
+      let nearServ = [wells, clin, hosp].some(g =>
+        g.features.some(x => turf.distance(c, x, {units:"km"}) < 1)
+      );
+
+      let score =
+        (insideBuilt ? 25 : 0) +
+        (nearRoad ? 20 : 0) +
+        (farSet ? 25 : 0) +
+        (safe ? 20 : 0) +
+        (nearServ ? 10 : 0);
+
+      let price =
+        100 +
+        (insideBuilt ? 30 : 0) +
+        (nearRoad ? 20 : 0) +
+        (nearServ ? 20 : 0) +
+        (score >= 70 ? 20 : 0) -
+        (farSet ? 0 : 50);
+
+      L.marker([c.geometry.coordinates[1], c.geometry.coordinates[0]])
+        .addTo(map)
+        .bindPopup(`
+          <b>موقع مقترح</b><br>
+          Score: ${score}/100<br>
+          السعر التقديري: ${price}$
+        `);
+
+      siteCount++;
+
+      html += `<hr>Score: ${score}/100<br>السعر: ${price}$`;
+    }
+
+    l.bindPopup(html);
+  }
+
 }).addTo(map);
 
-// ===== DASHBOARD =====
-document.getElementById("tTotal").innerText=tg.features.length;
-document.getElementById("tDef").innerText=deficitCount;
-document.getElementById("tSites").innerText=siteCount;
+// ================= DASHBOARD =================
+document.getElementById("tTotal").innerText = tg.features.length;
+document.getElementById("tDef").innerText = deficitCount;
+document.getElementById("tSites").innerText = siteCount;
 
 map.fitBounds(tgLayer.getBounds());
+
 }
 </script>
+
 </body>
 </html>
+
