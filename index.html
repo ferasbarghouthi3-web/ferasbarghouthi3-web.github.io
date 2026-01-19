@@ -162,6 +162,12 @@
         "features": []
       };
 
+      /* Function to check distance from Area C */
+      function isNearAreaC(lat, lng) {
+        var areaCBounds = L.geoJSON(areaC).getBounds();
+        return areaCBounds.contains(L.latLng(lat, lng));
+      }
+
       /* Simple spatial logic for suggestions */
       built.eachLayer(function(builtFeature){
         var center = builtFeature.getBounds().getCenter();
@@ -173,8 +179,8 @@
           }
         });
 
-        // Threshold (منطقي وبسيط)
-        if (schoolCount < 2) {
+        // Check if the area is far enough from Area C
+        if (schoolCount < 2 && !isNearAreaC(center.lat, center.lng)) {
           suggestedSchools.features.push({
             "type": "Feature",
             "properties": {
