@@ -56,6 +56,19 @@ html,body{height:100%;margin:0;}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 
+/* DYNAMIC POINT SIZE */
+function getRadius(){
+  return Math.max(map.getZoom() - 6, 3);
+}
+
+map.on("zoomend", function(){
+  map.eachLayer(function(layer){
+    if(layer.setRadius){
+      layer.setRadius(getRadius());
+    }
+  });
+});
+
 /* MAP */
 var map = L.map("map").setView([31.9038,35.2034],11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
@@ -129,32 +142,68 @@ var roadsLayer=L.geoJSON(roads,{style:{color:"#4B0082",weight:2},onEachFeature:p
 
 /* POINTS — 🔹 Popup Added Here Only */
 var schoolsLayer=L.geoJSON(schools,{
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{
+    radius:getRadius(),
+    fillColor:"#1e90ff",
+    color:"#000",
+    weight:1,
+    fillOpacity:0.9
+  }),
   onEachFeature:popupAttributes
 }).addTo(map);
 
 var hospitalsLayer=L.geoJSON(hospitals,{
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{
+    radius:getRadius(),
+    fillColor:"#b22222",
+    color:"#000",
+    weight:1,
+    fillOpacity:0.9
+  }),
   onEachFeature:popupAttributes
 }).addTo(map);
 
 var clinicsLayer=L.geoJSON(clinics,{
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{
+    radius:getRadius(),
+    fillColor:"#2e8b57",
+    color:"#000",
+    weight:1,
+    fillOpacity:0.9
+  }),
   onEachFeature:popupAttributes
 }).addTo(map);
 
 var wellsLayer=L.geoJSON(wells,{
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")}),
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{
+    radius:getRadius(),
+    fillColor:"#00ced1",
+    color:"#000",
+    weight:1,
+    fillOpacity:0.9
+  }),
   onEachFeature:popupAttributes
 }).addTo(map);
 
 var quarriesLayer=L.geoJSON(quarries,{
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")}),
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{
+    radius:getRadius(),
+    fillColor:"#696969",
+    color:"#000",
+    weight:1,
+    fillOpacity:0.9
+  }),
   onEachFeature:popupAttributes
 }).addTo(map);
 
 var outpostsLayer=L.geoJSON(outposts,{
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{
+    radius:getRadius(),
+    fillColor:"#ff8c00",
+    color:"#000",
+    weight:1,
+    fillOpacity:0.9
+  }),
   onEachFeature:popupAttributes
 }).addTo(map);
 
@@ -213,3 +262,5 @@ legend.addTo(map);
 </script>
 </body>
 </html>
+
+
