@@ -169,6 +169,33 @@ areaBLayer.bringToBack();
 areaCLayer.bringToBack();
 ramallahLayer.bringToFront();
 
+/* PROPOSED SCHOOL LOCATIONS BASED ON FACTORS (Population, Proximity to Health Centers, Safety) */
+var proposedSchoolLocationsLayer = L.geoJSON([], {
+  style: { color: "#0000FF", weight: 2, fillOpacity: 0.4 },
+  onEachFeature: popupAttributes
+}).addTo(map);
+
+/* Add Custom Logic for Proposed School Locations */
+function generateProposedLocations() {
+  // This is a placeholder for the logic to generate proposed school locations based on criteria
+  // (e.g. population density, proximity to health centers, distance from hazardous areas)
+  
+  // Example of adding a proposed school location (just for testing)
+  proposedSchoolLocationsLayer.addData({
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [35.215, 31.925]
+    },
+    "properties": {
+      "name": "Proposed School Location",
+      "reason": "Near health center, safe area"
+    }
+  });
+}
+
+generateProposedLocations();
+
 /* LAYER CONTROL */
 L.control.layers(null,{
   "Ramallah Boundary":ramallahLayer,
@@ -185,7 +212,8 @@ L.control.layers(null,{
   "Outposts":outpostsLayer,
   "Settlements":settlementsLayer,
   "Military Sites":militaryLayer,
-  "Natural Areas":naturalLayer
+  "Natural Areas":naturalLayer,
+  "Proposed School Locations": proposedSchoolLocationsLayer
 },{collapsed:false}).addTo(map);
 
 /* LEGEND */
@@ -204,6 +232,7 @@ legend.onAdd=function(){
     <div class="legend-item"><div class="icon icon-well">💧</div>Wells</div>
     <div class="legend-item"><div class="icon icon-quarry">⛏</div>Quarries</div>
     <div class="legend-item"><div class="icon icon-outpost">⛺</div>Outposts</div>
+    <div class="legend-item"><div style="width:14px;height:14px;background:#0000FF;border:2px solid #0000FF"></div>Proposed Schools</div>
   `;
   return div;
 };
@@ -213,3 +242,5 @@ legend.addTo(map);
 </script>
 </body>
 </html>
+
+
