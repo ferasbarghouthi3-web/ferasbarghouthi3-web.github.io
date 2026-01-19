@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- Add leaflet markercluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
   <style>
     html,body{height:100%;margin:0;}
@@ -52,6 +55,8 @@
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Add leaflet markercluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
   <script>
     /* MAP */
     var map = L.map("map").setView([31.9038,35.2034],11);
@@ -103,56 +108,62 @@
     function initLayers(data){
       let [ramallah, schools, roads, built, settlements, outposts, military, quarries, natural, wells, clinics, hospitals, areaA, areaB, areaC] = data;
 
+      /* Create marker clusters */
+      var markers = L.markerClusterGroup();
+
       /* RAMALLAH BORDER */
-      var ramallahLayer=L.geoJSON(ramallah, {
+      var ramallahLayer = L.geoJSON(ramallah, {
         style:{color:"#000",weight:4,fillOpacity:0},
         onEachFeature:popupAttributes
       }).addTo(map);
 
       /* LAND CLASSIFICATION */
-      var areaALayer=L.geoJSON(areaA,{style:{color:"#006400",weight:2,fillColor:"#00ff00",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
-      var areaBLayer=L.geoJSON(areaB,{style:{color:"#b8860b",weight:2,fillColor:"#ffff00",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
-      var areaCLayer=L.geoJSON(areaC,{style:{color:"#8b0000",weight:2,fillColor:"#ff0000",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
+      var areaALayer = L.geoJSON(areaA, {style:{color:"#006400",weight:2,fillColor:"#00ff00",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
+      var areaBLayer = L.geoJSON(areaB, {style:{color:"#b8860b",weight:2,fillColor:"#ffff00",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
+      var areaCLayer = L.geoJSON(areaC, {style:{color:"#8b0000",weight:2,fillColor:"#ff0000",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
 
       /* BASE */
-      var builtLayer=L.geoJSON(built,{style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},onEachFeature:popupAttributes}).addTo(map);
-      var roadsLayer=L.geoJSON(roads,{style:{color:"#4B0082",weight:2},onEachFeature:popupAttributes}).addTo(map);
+      var builtLayer = L.geoJSON(built, {style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},onEachFeature:popupAttributes}).addTo(map);
+      var roadsLayer = L.geoJSON(roads, {style:{color:"#4B0082",weight:2},onEachFeature:popupAttributes}).addTo(map);
 
-      /* POINTS */
-      var schoolsLayer=L.geoJSON(schools,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-school")}),
+      /* POINTS - Add to marker cluster */
+      var schoolsLayer = L.geoJSON(schools, {
+        pointToLayer:(f,ll) => L.marker(ll, {icon:icon("icon-school")}),
         onEachFeature:popupAttributes
-      }).addTo(map);
+      }).addTo(markers);
 
-      var hospitalsLayer=L.geoJSON(hospitals,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-hospital")}),
+      var hospitalsLayer = L.geoJSON(hospitals, {
+        pointToLayer:(f,ll) => L.marker(ll, {icon:icon("icon-hospital")}),
         onEachFeature:popupAttributes
-      }).addTo(map);
+      }).addTo(markers);
 
-      var clinicsLayer=L.geoJSON(clinics,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-clinic")}),
+      var clinicsLayer = L.geoJSON(clinics, {
+        pointToLayer:(f,ll) => L.marker(ll, {icon:icon("icon-clinic")}),
         onEachFeature:popupAttributes
-      }).addTo(map);
+      }).addTo(markers);
 
-      var wellsLayer=L.geoJSON(wells,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-well")}),
+      var wellsLayer = L.geoJSON(wells, {
+        pointToLayer:(f,ll) => L.marker(ll, {icon:icon("icon-well")}),
         onEachFeature:popupAttributes
-      }).addTo(map);
+      }).addTo(markers);
 
-      var quarriesLayer=L.geoJSON(quarries,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-quarry")}),
+      var quarriesLayer = L.geoJSON(quarries, {
+        pointToLayer:(f,ll) => L.marker(ll, {icon:icon("icon-quarry")}),
         onEachFeature:popupAttributes
-      }).addTo(map);
+      }).addTo(markers);
 
-      var outpostsLayer=L.geoJSON(outposts,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-outpost")}),
+      var outpostsLayer = L.geoJSON(outposts, {
+        pointToLayer:(f,ll) => L.marker(ll, {icon:icon("icon-outpost")}),
         onEachFeature:popupAttributes
-      }).addTo(map);
+      }).addTo(markers);
 
       /* POLYGONS */
-      var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000",weight:2},onEachFeature:popupAttributes}).addTo(map);
-      var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
-      var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
+      var settlementsLayer = L.geoJSON(settlements, {style:{color:"#ff0000",weight:2}, onEachFeature:popupAttributes}).addTo(map);
+      var militaryLayer = L.geoJSON(military, {style:{color:"#800000",weight:2}, onEachFeature:popupAttributes}).addTo(map);
+      var naturalLayer = L.geoJSON(natural, {style:{color:"#228b22",fillOpacity:0.5}, onEachFeature:popupAttributes}).addTo(map);
+
+      /* Add markers (cluster) */
+      markers.addTo(map);
 
       /* ORDER */
       areaALayer.bringToBack();
@@ -161,7 +172,7 @@
       ramallahLayer.bringToFront();
 
       /* LAYER CONTROL */
-      L.control.layers(null,{
+      L.control.layers(null, {
         "Ramallah Boundary":ramallahLayer,
         "Area A":areaALayer,
         "Area B":areaBLayer,
@@ -177,15 +188,13 @@
         "Settlements":settlementsLayer,
         "Military Sites":militaryLayer,
         "Natural Areas":naturalLayer
-      },{
-        collapsed:false
-      }).addTo(map);
+      }, {collapsed:false}).addTo(map);
 
       /* LEGEND */
-      var legend=L.control({position:"bottomright"});
-      legend.onAdd=function(){
-        var div=L.DomUtil.create("div","legend");
-        div.innerHTML=`
+      var legend = L.control({position:"bottomright"});
+      legend.onAdd = function(){
+        var div = L.DomUtil.create("div", "legend");
+        div.innerHTML = `
           <b>Legend</b>
           <div class="legend-item"><div style="width:14px;height:14px;background:#00ff00;border:2px solid #006400"></div>Area A</div>
           <div class="legend-item"><div style="width:14px;height:14px;background:#ffff00;border:2px solid #b8860b"></div>Area B</div>
