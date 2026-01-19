@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>WebGIS – School Site Selection (Ramallah)</title>
+<title>Web GIS - Ramallah</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -23,18 +23,23 @@ html,body{height:100%;margin:0;}
 }
 .icon-school{background:#1e90ff;color:#fff;border-radius:4px;}
 .icon-hospital{background:#b22222;color:#fff;border-radius:50%;}
-.icon-clinic{background:#2e8b57;color:#fff;border-radius:50%;}
-.icon-proposed{background:#800080;color:#fff;border-radius:50%;}
+.icon-clinic{background:#2e8b57;color:#fff;}
+.icon-proposed{background:#9400d3;color:#fff;border-radius:50%;}
 
 /* LEGEND */
 .legend{
   background:white;
   padding:10px;
-  font-size:12px;
+  font-size:13px;
   border-radius:6px;
   box-shadow:0 0 10px rgba(0,0,0,0.3);
 }
 .legend-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+
+/* POPUP */
+.popup-table{border-collapse:collapse;width:100%;}
+.popup-table td{border-bottom:1px solid #ddd;padding:4px;font-size:12px;}
+.popup-title{font-weight:bold;margin-bottom:6px;}
 </style>
 </head>
 
@@ -42,15 +47,26 @@ html,body{height:100%;margin:0;}
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
 <script>
 
 /* MAP */
-var map = L.map("map").setView([31.9038,35.2034],11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OSM"}).addTo(map);
+var map=L.map("map").setView([31.9038,35.2034],11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap"}).addTo(map);
 
-/* ICON FACTORY */
+/* POPUP ATTRIBUTES */
+function popupAttributes(feature, layer){
+  if(!feature.properties) return;
+  let html='<div class="popup-title">Attributes</div><table class="popup-table">';
+  for(let k in feature.properties){
+    html+=`<tr><td><b>${k}</b></td><td>${feature.properties[k]}</td></tr>`;
+  }
+  html+='</table>';
+  layer.bindPopup(html);
+}
+
+/* ICON */
 function icon(symbol, cls){
   return L.divIcon({
     className:"",
@@ -62,9 +78,8 @@ function icon(symbol, cls){
 
 /* LOAD DATA */
 Promise.all([
+  fetch("ramallah.json").then(r=>r.json()),
   fetch("schools.json").then(r=>r.json()),
-  fetch("Hospitals.geojson").then(r=>r.json()),
-  fetch("Clinics.geojson").then(r=>r.json()),
   fetch("Settlements.geojson").then(r=>r.json()),
   fetch("Outposts.geojson").then(r=>r.json()),
   fetch("Military sites.geojson").then(r=>r.json()),
@@ -72,77 +87,67 @@ Promise.all([
   fetch("natural.json").then(r=>r.json()),
   fetch("area_A.geojson").then(r=>r.json()),
   fetch("Area_B.geojson").then(r=>r.json())
-]).then(init);
+]).then(initLayers);
 
-/* INIT */
-function init(data){
+function initLayers(data){
 
 let [
-  schools,hospitals,clinics,
+  ramallah,schools,
   settlements,outposts,military,quarries,natural,
   areaA,areaB
-] = data;
+]=data;
 
-/* DISPLAY BASIC LAYERS */
-L.geoJSON(schools,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")})}).addTo(map);
-L.geoJSON(hospitals,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("+","icon-hospital")})}).addTo(map);
-L.geoJSON(clinics,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("+","icon-clinic")})}).addTo(map);
+/* DISPLAY BASE DATA */
+L.geoJSON(ramallah,{style:{color:"#000",weight:3,fillOpacity:0}}).addTo(map);
+var schoolsLayer=L.geoJSON(schools,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
 
-/* BUFFER ZONES (meters) */
-let dangerBuffer = turf.buffer(
-  turf.featureCollection([
-    ...settlements.features,
-    ...outposts.features,
-    ...military.features,
-    ...quarries.features
-  ]), 500, {units:"meters"}
-);
+/* BUFFERS (SAFE – NO DATA ALTERATION) */
+function bufferLayer(fc,dist,color){
+  return L.geoJSON(turf.buffer(fc,dist,{units:"meters"}),{
+    style:{color:color,fillOpacity:0.15}
+  }).addTo(map);
+}
 
-let naturalBuffer = turf.buffer(
-  turf.featureCollection(natural.features),
-  300, {units:"meters"}
-);
+bufferLayer(settlements,500,"#ff0000");
+bufferLayer(outposts,500,"#ff8c00");
+bufferLayer(military,500,"#800000");
+bufferLayer(quarries,400,"#696969");
+bufferLayer(natural,300,"#228b22");
 
-/* MERGE ALLOWED AREAS A + B */
-let allowedArea = turf.union(
-  turf.featureCollection(areaA.features),
-  turf.featureCollection(areaB.features)
-);
+/* PREPARE SCHOOLS FOR ANALYSIS */
+let schoolsFC=turf.featureCollection(schools.features);
 
-/* GENERATE RANDOM CANDIDATE POINTS */
-let candidates = turf.randomPoint(30, {bbox:turf.bbox(allowedArea)});
+/* PROPOSED SITES (POINTS ONLY – SAFE) */
+let proposedSites={type:"FeatureCollection",features:[]};
 
-/* FILTER SUITABLE SITES */
-let suitable = {
-  type:"FeatureCollection",
-  features:[]
-};
+areaA.features.concat(areaB.features).forEach(poly=>{
+  let center=turf.centerOfMass(poly);
 
-candidates.features.forEach(pt=>{
-  if(
-    turf.booleanPointInPolygon(pt, allowedArea) &&
-    !turf.booleanPointInPolygon(pt, dangerBuffer) &&
-    !turf.booleanPointInPolygon(pt, naturalBuffer)
-  ){
-    let nearSchools = turf.pointsWithinDistance(pt, schools, 1, {units:"kilometers"});
-    pt.properties = {
-      nearby_schools: nearSchools.features.length,
-      required_schools: Math.max(0, 3 - nearSchools.features.length),
-      suitability: "High"
-    };
-    suitable.features.push(pt);
-  }
+  let nearby=turf.pointsWithinDistance(center,schoolsFC,1,{units:"kilometers"});
+
+  center.properties={
+    land_class: poly===areaA.features[0]?"Area A":"Area B",
+    existing_schools: nearby.features.length,
+    required_schools: Math.max(0,3-nearby.features.length)
+  };
+
+  proposedSites.features.push(center);
 });
 
 /* DISPLAY PROPOSED SITES */
-L.geoJSON(suitable,{
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🏫","icon-proposed")}),
+var proposedLayer=L.geoJSON(proposedSites,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("★","icon-proposed")}),
   onEachFeature:(f,l)=>{
     l.bindPopup(`
-      <b>Proposed School Site</b><br>
-      Nearby Schools: ${f.properties.nearby_schools}<br>
-      Required Schools: ${f.properties.required_schools}<br>
-      Suitability: <b>${f.properties.suitability}</b>
+      <div class="popup-title">Proposed School Site</div>
+      <table class="popup-table">
+        <tr><td><b>Land Class</b></td><td>${f.properties.land_class}</td></tr>
+        <tr><td><b>Existing Schools</b></td><td>${f.properties.existing_schools}</td></tr>
+        <tr><td><b>Required Schools</b></td><td>${f.properties.required_schools}</td></tr>
+      </table>
     `);
   }
 }).addTo(map);
@@ -152,17 +157,16 @@ var legend=L.control({position:"bottomright"});
 legend.onAdd=function(){
   var d=L.DomUtil.create("div","legend");
   d.innerHTML=`
-  <b>Legend</b>
-  <div class="legend-item"><div class="icon icon-school">🎓</div> Existing Schools</div>
-  <div class="legend-item"><div class="icon icon-proposed">🏫</div> Proposed Sites</div>
-  <div class="legend-item"><div class="icon icon-hospital">+</div> Hospitals</div>
-  <div class="legend-item"><div class="icon icon-clinic">+</div> Clinics</div>
+    <b>Legend</b>
+    <div class="legend-item"><div class="icon icon-school">🎓</div> Schools</div>
+    <div class="legend-item"><div class="icon icon-proposed">★</div> Proposed School</div>
   `;
   return d;
 };
 legend.addTo(map);
 
 }
+
 </script>
 </body>
 </html>
