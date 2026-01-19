@@ -13,11 +13,11 @@ html,body{height:100%;margin:0;}
 
 /* ICONS */
 .icon{
-  width:18px;height:18px;
+  width:20px;height:20px;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:13px;
+  font-size:14px;
   font-weight:bold;
   border:2px solid #000;
 }
@@ -62,16 +62,6 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
   attribution:"&copy; OpenStreetMap"
 }).addTo(map);
 
-/* ===== PANES (ORDER CONTROL) ===== */
-map.createPane("paneLand");
-map.getPane("paneLand").style.zIndex = 400;
-
-map.createPane("paneBuilt");
-map.getPane("paneBuilt").style.zIndex = 450;
-
-map.createPane("panePoints");
-map.getPane("panePoints").style.zIndex = 500;
-
 /* POPUP */
 function popupAttributes(feature, layer){
   if(!feature.properties) return;
@@ -88,8 +78,8 @@ function icon(symbol, cls){
   return L.divIcon({
     className:"",
     html:`<div class="icon ${cls}">${symbol}</div>`,
-    iconSize:[18,18],
-    iconAnchor:[9,9]
+    iconSize:[20,20],
+    iconAnchor:[10,10]
   });
 }
 
@@ -122,7 +112,7 @@ let [
   areaA,areaB,areaC
 ] = data;
 
-/* BASE */
+/* RAMALLAH BORDER (TOP) */
 var ramallahLayer = L.geoJSON(ramallah,{
   style:{color:"#000",weight:4,fillOpacity:0},
   onEachFeature:popupAttributes
@@ -130,75 +120,68 @@ var ramallahLayer = L.geoJSON(ramallah,{
 
 /* LAND CLASSIFICATION (BOTTOM) */
 var areaALayer = L.geoJSON(areaA,{
-  pane:"paneLand",
-  style:{color:"#006400",weight:2,fillColor:"#00ff00",fillOpacity:0.35}
+  style:{color:"#006400",weight:2,fillColor:"#00ff00",fillOpacity:0.35},
+  onEachFeature:(f,l)=>l.bindPopup("<b>Area A</b><br>High Priority – Allowed")
 }).addTo(map);
 
 var areaBLayer = L.geoJSON(areaB,{
-  pane:"paneLand",
-  style:{color:"#b8860b",weight:2,fillColor:"#ffff00",fillOpacity:0.35}
+  style:{color:"#b8860b",weight:2,fillColor:"#ffff00",fillOpacity:0.35},
+  onEachFeature:(f,l)=>l.bindPopup("<b>Area B</b><br>Medium Priority – Restricted")
 }).addTo(map);
 
 var areaCLayer = L.geoJSON(areaC,{
-  pane:"paneLand",
-  style:{color:"#8b0000",weight:2,fillColor:"#ff0000",fillOpacity:0.35}
+  style:{color:"#8b0000",weight:2,fillColor:"#ff0000",fillOpacity:0.35},
+  onEachFeature:(f,l)=>l.bindPopup("<b>Area C</b><br><span style='color:red'>Not Allowed</span>")
 }).addTo(map);
 
-/* BUILT-UP (ABOVE A-B-C) ✅ */
+/* BASE LAYERS */
 var builtLayer = L.geoJSON(built,{
-  pane:"paneBuilt",
-  style:{
-    color:"#8B4513",
-    weight:2,
-    fillColor:"#F5F5DC",
-    fillOpacity:0.75
-  },
+  style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},
   onEachFeature:popupAttributes
 }).addTo(map);
 
-/* ROADS */
 var roadsLayer = L.geoJSON(roads,{
-  style:{color:"#4B0082",weight:2}
+  style:{color:"#4B0082",weight:2},
+  onEachFeature:popupAttributes
 }).addTo(map);
 
 /* POINTS */
-var schoolsLayer = L.geoJSON(schools,{
-  pane:"panePoints",
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
-  onEachFeature:popupAttributes
-}).addTo(map);
+var schoolsLayer = L.geoJSON(schools,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),onEachFeature:popupAttributes}).addTo(map);
+var hospitalsLayer = L.geoJSON(hospitals,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),onEachFeature:popupAttributes}).addTo(map);
+var clinicsLayer = L.geoJSON(clinics,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),onEachFeature:popupAttributes}).addTo(map);
+var wellsLayer = L.geoJSON(wells,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")}),onEachFeature:popupAttributes}).addTo(map);
+var quarriesLayer = L.geoJSON(quarries,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")}),onEachFeature:popupAttributes}).addTo(map);
+var outpostsLayer = L.geoJSON(outposts,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),onEachFeature:popupAttributes}).addTo(map);
 
-var hospitalsLayer = L.geoJSON(hospitals,{
-  pane:"panePoints",
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),
-  onEachFeature:popupAttributes
-}).addTo(map);
+/* POLYGONS */
+var settlementsLayer = L.geoJSON(settlements,{style:{color:"#ff0000",weight:2},onEachFeature:popupAttributes}).addTo(map);
+var militaryLayer = L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
+var naturalLayer = L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
 
-var clinicsLayer = L.geoJSON(clinics,{
-  pane:"panePoints",
-  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),
-  onEachFeature:popupAttributes
-}).addTo(map);
+/* FIX ORDER */
+areaALayer.bringToBack();
+areaBLayer.bringToBack();
+areaCLayer.bringToBack();
+ramallahLayer.bringToFront();
 
-/* OTHER */
-var wellsLayer = L.geoJSON(wells,{pane:"panePoints",pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")})}).addTo(map);
-var quarriesLayer = L.geoJSON(quarries,{pane:"panePoints",pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")})}).addTo(map);
-var outpostsLayer = L.geoJSON(outposts,{pane:"panePoints",pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")})}).addTo(map);
-var settlementsLayer = L.geoJSON(settlements,{style:{color:"#ff0000",weight:2}}).addTo(map);
-var militaryLayer = L.geoJSON(military,{style:{color:"#800000",weight:2}}).addTo(map);
-var naturalLayer = L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5}}).addTo(map);
-
-/* CONTROL */
+/* LAYER CONTROL */
 L.control.layers(null,{
-  "Built-up Areas":builtLayer,
+  "Ramallah Boundary":ramallahLayer,
   "Area A":areaALayer,
   "Area B":areaBLayer,
   "Area C":areaCLayer,
+  "Built-up Areas":builtLayer,
+  "Roads":roadsLayer,
   "Schools":schoolsLayer,
   "Hospitals":hospitalsLayer,
-  "Clinics":clinicsLayer
+  "Clinics":clinicsLayer,
+  "Wells":wellsLayer,
+  "Quarries":quarriesLayer,
+  "Outposts":outpostsLayer,
+  "Settlements":settlementsLayer,
+  "Military Sites":militaryLayer,
+  "Natural Areas":naturalLayer
 },{collapsed:false}).addTo(map);
-
 }
 </script>
 </body>
