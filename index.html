@@ -168,53 +168,36 @@
         collapsed:false
       }).addTo(map);
 
-      var legend=L.control({position:"bottomright"});
-      legend.onAdd=function(){
-        var div=L.DomUtil.create("div","legend");
-        div.innerHTML=`
-          <b>Legend</b>
-          <div class="legend-item"><div style="width:14px;height:14px;background:#00ff00;border:2px solid #006400"></div>Area A</div>
-          <div class="legend-item"><div style="width:14px;height:14px;background:#ffff00;border:2px solid #b8860b"></div>Area B</div>
-          <div class="legend-item"><div style="width:14px;height:14px;background:#ff0000;border:2px solid #8b0000"></div>Area C</div>
-          <hr>
-          <div class="legend-item"><div class="icon icon-school"></div>Schools</div>
-          <div class="legend-item"><div class="icon icon-hospital"></div>Hospitals</div>
-          <div class="legend-item"><div class="icon icon-clinic"></div>Clinics</div>
-          <div class="legend-item"><div class="icon icon-well"></div>Wells</div>
-          <div class="legend-item"><div class="icon icon-quarry"></div>Quarries</div>
-          <div class="legend-item"><div class="icon icon-outpost"></div>Outposts</div>
-        `;
-        return div;
-      };
-      legend.addTo(map);
-
-      /* Add Suggested Schools Layer */
+      // اقتراح بناء المدارس
       var suggestedSchoolsLayer = L.layerGroup().addTo(map);
 
-      /* Example: Adding a suggested school */
-      var suggestedSchool = L.marker([31.912, 35.204], { icon: icon('icon-school') })
-        .bindPopup('<b>مدرسة مقترحة</b><br>عدد المدارس: 5<br>المنطقة: رام الله')
-        .addTo(suggestedSchoolsLayer);
+      // تحليل عدد المدارس في التجمعات السكانية
+      var schoolsInAreaA = getSchoolsInArea(areaA);
+      var schoolsInAreaB = getSchoolsInArea(areaB);
+      var schoolsInAreaC = getSchoolsInArea(areaC);
 
-      /* SEARCH FUNCTION */
-      var geocoder = L.Control.Geocoder.nominatim();
-      var searchControl = new L.Control.Geocoder({
-        geocoder: geocoder
-      }).addTo(map);
+      // تحديد التجمعات التي تحتاج إلى مدارس بناءً على العدد
+      if (schoolsInAreaA < 5) {
+        addSuggestedSchool([31.9000, 35.2030]); // إضافة مدرسة جديدة في موقع محدد
+      }
 
-      searchControl.on('markgeocode', function(e) {
-        var bbox = e.geocode.bbox;
-        var bounds = L.latLngBounds(bbox);
-        map.fitBounds(bounds);
+      if (schoolsInAreaB < 5) {
+        addSuggestedSchool([31.9100, 35.2100]); // إضافة مدرسة جديدة في موقع محدد
+      }
 
-        var areaName = e.geocode.name;
-        var numberOfSchools = getSchoolsInArea(areaName);
-        var popupContent = `<b>التجمع السكني: ${areaName}</b><br>عدد المدارس: ${numberOfSchools}`;
-        L.popup().setLatLng(bounds.getCenter()).setContent(popupContent).openOn(map);
-      });
+      // إضافة المدارس المقترحة في مناطق لا تقع في Area C
+      function addSuggestedSchool(location) {
+        // تحقق من الموقع إذا كان يقع خارج Area C
+        if (!isInAreaC(location)) {
+          L.marker(location, { icon: icon("icon-school") })
+            .bindPopup("اقتراح مدرسة جديدة")
+            .addTo(suggestedSchoolsLayer);
+        }
+      }
 
-      function getSchoolsInArea(areaName) {
-        return Math.floor(Math.random() * 10) + 1;
+      function isInAreaC(location) {
+        var latLng = L.latLng(location);
+        return areaCLayer.getBounds().contains(latLng); // تحقق مما إذا كان الموقع يقع في منطقة C
       }
     }
   </script>
