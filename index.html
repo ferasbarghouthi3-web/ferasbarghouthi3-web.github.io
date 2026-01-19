@@ -127,38 +127,41 @@ var areaCLayer=L.geoJSON(areaC,{style:{color:"#8b0000",weight:2,fillColor:"#ff00
 var builtLayer=L.geoJSON(built,{style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},onEachFeature:popupAttributes}).addTo(map);
 var roadsLayer=L.geoJSON(roads,{style:{color:"#4B0082",weight:2},onEachFeature:popupAttributes}).addTo(map);
 
-/* POINTS */
-var schoolsLayer=L.geoJSON(schools,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),onEachFeature:popupAttributes}).addTo(map);
-var hospitalsLayer=L.geoJSON(hospitals,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),onEachFeature:popupAttributes}).addTo(map);
-var clinicsLayer=L.geoJSON(clinics,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),onEachFeature:popupAttributes}).addTo(map);
-var wellsLayer=L.geoJSON(wells,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")}),onEachFeature:popupAttributes}).addTo(map);
-var quarriesLayer=L.geoJSON(quarries,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")}),onEachFeature:popupAttributes}).addTo(map);
-var outpostsLayer=L.geoJSON(outposts,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),onEachFeature:popupAttributes}).addTo(map);
+/* POINTS — 🔹 Popup Added Here Only */
+var schoolsLayer=L.geoJSON(schools,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var hospitalsLayer=L.geoJSON(hospitals,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var clinicsLayer=L.geoJSON(clinics,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var wellsLayer=L.geoJSON(wells,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var quarriesLayer=L.geoJSON(quarries,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var outpostsLayer=L.geoJSON(outposts,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
 
 /* POLYGONS */
 var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000",weight:2},onEachFeature:popupAttributes}).addTo(map);
 var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
 var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
-
-/* PROPOSED SCHOOLS LAYER (FOR NEW SCHOOLS) */
-var proposedSchoolsLayer = L.geoJSON([],{ 
-  pointToLayer: function (feature, latlng) {
-    return L.marker(latlng, {
-      icon: L.divIcon({
-        className: "icon icon-proposed",
-        html: "🏫",
-        iconSize: [25, 25],
-        iconAnchor: [12, 12]
-      })
-    });
-  }
-}).addTo(map);
-
-// Example to add proposed schools. Normally, this would be dynamic or based on factors.
-proposedSchoolsLayer.addData([
-  { type: "Feature", geometry: { type: "Point", coordinates: [35.2, 31.9] }, properties: { name: "Proposed School 1" } },
-  { type: "Feature", geometry: { type: "Point", coordinates: [35.25, 31.85] }, properties: { name: "Proposed School 2" } }
-]);
 
 /* ORDER */
 areaALayer.bringToBack();
@@ -182,8 +185,7 @@ L.control.layers(null,{
   "Outposts":outpostsLayer,
   "Settlements":settlementsLayer,
   "Military Sites":militaryLayer,
-  "Natural Areas":naturalLayer,
-  "Proposed Schools":proposedSchoolsLayer
+  "Natural Areas":naturalLayer
 },{collapsed:false}).addTo(map);
 
 /* LEGEND */
@@ -202,13 +204,12 @@ legend.onAdd=function(){
     <div class="legend-item"><div class="icon icon-well">💧</div>Wells</div>
     <div class="legend-item"><div class="icon icon-quarry">⛏</div>Quarries</div>
     <div class="legend-item"><div class="icon icon-outpost">⛺</div>Outposts</div>
-    <hr>
-    <div class="legend-item"><div style="width:14px;height:14px;background:#ff69b4;"></div>Proposed Schools</div>
   `;
   return div;
 };
 legend.addTo(map);
 
+}
 </script>
 </body>
 </html>
