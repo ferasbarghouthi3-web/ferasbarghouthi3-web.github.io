@@ -45,14 +45,16 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 /* =========================
-   3. ستايل عام
+   3. دالة إنشاء Popup من الـ Attributes
 ========================= */
-function styleLayer(color) {
-  return {
-    color: color,
-    weight: 2,
-    fillOpacity: 0.5
-  };
+function popupAttributes(feature, layer) {
+  if (feature.properties) {
+    let content = "";
+    for (let key in feature.properties) {
+      content += "<b>" + key + "</b>: " + feature.properties[key] + "<br>";
+    }
+    layer.bindPopup(content);
+  }
 }
 
 /* =========================
@@ -93,45 +95,72 @@ function initLayers(data) {
     hospitals
   ] = data;
 
+  /* رام الله - بوردر فقط */
   var ramallahLayer = L.geoJSON(ramallah, {
-    style: styleLayer("#000000")
+    style: {
+      color: "#000000",
+      weight: 3,
+      fillOpacity: 0
+    },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
-  var schoolsLayer = L.geoJSON(schools).addTo(map);
+  var schoolsLayer = L.geoJSON(schools, {
+    onEachFeature: popupAttributes
+  }).addTo(map);
 
   var roadsLayer = L.geoJSON(roads, {
-    style: styleLayer("#8B4513")
+    style: { color: "#8B4513", weight: 2 },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
+  /* Built-up لون بيج فاتح */
   var builtLayer = L.geoJSON(built, {
-    style: styleLayer("#A9A9A9")
+    style: {
+      color: "#D2B48C",
+      fillColor: "#F5F5DC",
+      weight: 1,
+      fillOpacity: 0.7
+    },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
   var settlementsLayer = L.geoJSON(settlements, {
-    style: styleLayer("#FF0000")
+    style: { color: "#FF0000", weight: 2 },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
   var outpostsLayer = L.geoJSON(outposts, {
-    style: styleLayer("#FF8C00")
+    style: { color: "#FF8C00", weight: 2 },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
   var militaryLayer = L.geoJSON(military, {
-    style: styleLayer("#800000")
+    style: { color: "#800000", weight: 2 },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
   var quarriesLayer = L.geoJSON(quarries, {
-    style: styleLayer("#708090")
+    style: { color: "#708090", weight: 2 },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
   var naturalLayer = L.geoJSON(natural, {
-    style: styleLayer("#228B22")
+    style: { color: "#228B22", fillOpacity: 0.5 },
+    onEachFeature: popupAttributes
   }).addTo(map);
 
-  var wellsLayer = L.geoJSON(wells).addTo(map);
+  var wellsLayer = L.geoJSON(wells, {
+    onEachFeature: popupAttributes
+  }).addTo(map);
 
-  var clinicsLayer = L.geoJSON(clinics).addTo(map);
+  var clinicsLayer = L.geoJSON(clinics, {
+    onEachFeature: popupAttributes
+  }).addTo(map);
 
-  var hospitalsLayer = L.geoJSON(hospitals).addTo(map);
+  var hospitalsLayer = L.geoJSON(hospitals, {
+    onEachFeature: popupAttributes
+  }).addTo(map);
 
   /* =========================
      6. Layer Control
@@ -150,7 +179,6 @@ function initLayers(data) {
     "Clinics": clinicsLayer,
     "Hospitals": hospitalsLayer
   }, { collapsed: false }).addTo(map);
-
 }
 </script>
 
