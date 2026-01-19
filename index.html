@@ -27,6 +27,7 @@ html,body{height:100%;margin:0;}
 .icon-well{background:#00ced1;color:#000;border-radius:50%;}
 .icon-quarry{background:#696969;color:#fff;}
 .icon-outpost{background:#ff8c00;color:#000;clip-path:polygon(50% 0%,0% 100%,100% 100%);}
+.icon-suggested{background:#006400;color:#fff;border-radius:50%;}
 
 /* LEGEND */
 .legend{
@@ -121,29 +122,22 @@ var ramallahLayer=L.geoJSON(ramallah,{
 /* LAND CLASSIFICATION */
 var areaALayer=L.geoJSON(areaA,{
   style:{color:"#006400",weight:2,fillColor:"#00ff00",fillOpacity:0.35},
-  onEachFeature:(f,l)=>l.bindPopup("<b>Area A</b><br>High Priority – Allowed")
+  onEachFeature:(f,l)=>l.bindPopup("<b>Area A</b><br>Allowed")
 }).addTo(map);
 
 var areaBLayer=L.geoJSON(areaB,{
   style:{color:"#b8860b",weight:2,fillColor:"#ffff00",fillOpacity:0.35},
-  onEachFeature:(f,l)=>l.bindPopup("<b>Area B</b><br>Medium Priority – Restricted")
+  onEachFeature:(f,l)=>l.bindPopup("<b>Area B</b><br>Restricted")
 }).addTo(map);
 
 var areaCLayer=L.geoJSON(areaC,{
   style:{color:"#8b0000",weight:2,fillColor:"#ff0000",fillOpacity:0.35},
-  onEachFeature:(f,l)=>l.bindPopup("<b>Area C</b><br><span style='color:red'>Not Allowed</span>")
+  onEachFeature:(f,l)=>l.bindPopup("<b>Area C</b><br>Not Allowed")
 }).addTo(map);
 
 /* BASE */
-var builtLayer=L.geoJSON(built,{
-  style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},
-  onEachFeature:popupAttributes
-}).addTo(map);
-
-var roadsLayer=L.geoJSON(roads,{
-  style:{color:"#4B0082",weight:2},
-  onEachFeature:popupAttributes
-}).addTo(map);
+var builtLayer=L.geoJSON(built,{style:{color:"#8B4513",fillOpacity:0.7},onEachFeature:popupAttributes}).addTo(map);
+var roadsLayer=L.geoJSON(roads,{style:{color:"#4B0082"},onEachFeature:popupAttributes}).addTo(map);
 
 /* POINTS */
 var schoolsLayer=L.geoJSON(schools,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),onEachFeature:popupAttributes}).addTo(map);
@@ -154,11 +148,32 @@ var quarriesLayer=L.geoJSON(quarries,{pointToLayer:(f,ll)=>L.marker(ll,{icon:ico
 var outpostsLayer=L.geoJSON(outposts,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),onEachFeature:popupAttributes}).addTo(map);
 
 /* POLYGONS */
-var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000",weight:2},onEachFeature:popupAttributes}).addTo(map);
-var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
+var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000"},onEachFeature:popupAttributes}).addTo(map);
+var militaryLayer=L.geoJSON(military,{style:{color:"#800000"},onEachFeature:popupAttributes}).addTo(map);
 var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
 
-/* FIX ORDER */
+/* SUGGESTED SCHOOL LOCATIONS */
+var suggestedSites={
+"type":"FeatureCollection",
+"features":[
+{"type":"Feature","properties":{"Site_ID":1,"Land_Class":"A","Nearby_Schools":2,"Required_Schools":1,"Decision":"Highly Suitable"},
+"geometry":{"type":"Point","coordinates":[35.205,31.91]}},
+{"type":"Feature","properties":{"Site_ID":2,"Land_Class":"B","Nearby_Schools":1,"Required_Schools":2,"Decision":"Moderately Suitable"},
+"geometry":{"type":"Point","coordinates":[35.215,31.895]}}
+]};
+
+var suggestedLayer=L.geoJSON(suggestedSites,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🏫","icon-suggested")}),
+  onEachFeature:(f,l)=>l.bindPopup(`
+    <b>Proposed School</b><br>
+    Land Class: ${f.properties.Land_Class}<br>
+    Nearby Schools: ${f.properties.Nearby_Schools}<br>
+    Required Schools: ${f.properties.Required_Schools}<br>
+    Decision: <b>${f.properties.Decision}</b>
+  `)
+}).addTo(map);
+
+/* ORDER */
 areaALayer.bringToBack();
 areaBLayer.bringToBack();
 areaCLayer.bringToBack();
@@ -170,7 +185,7 @@ L.control.layers(null,{
   "Area A":areaALayer,
   "Area B":areaBLayer,
   "Area C":areaCLayer,
-  "Built-up Areas":builtLayer,
+  "Built-up":builtLayer,
   "Roads":roadsLayer,
   "Schools":schoolsLayer,
   "Hospitals":hospitalsLayer,
@@ -180,30 +195,9 @@ L.control.layers(null,{
   "Outposts":outpostsLayer,
   "Settlements":settlementsLayer,
   "Military Sites":militaryLayer,
-  "Natural Areas":naturalLayer
+  "Natural Areas":naturalLayer,
+  "Proposed School Sites":suggestedLayer
 },{collapsed:false}).addTo(map);
-
-/* LEGEND */
-var legend=L.control({position:"bottomright"});
-legend.onAdd=function(){
-  var div=L.DomUtil.create("div","legend");
-  div.innerHTML=`
-    <b>Legend</b>
-    <div class="legend-item"><div style="width:14px;height:14px;background:#00ff00;border:2px solid #006400"></div>Area A</div>
-    <div class="legend-item"><div style="width:14px;height:14px;background:#ffff00;border:2px solid #b8860b"></div>Area B</div>
-    <div class="legend-item"><div style="width:14px;height:14px;background:#ff0000;border:2px solid #8b0000"></div>Area C</div>
-    <hr>
-    <div class="legend-item"><div class="icon icon-school">🎓</div>Schools</div>
-    <div class="legend-item"><div class="icon icon-hospital">✚</div>Hospitals</div>
-    <div class="legend-item"><div class="icon icon-clinic">✚</div>Clinics</div>
-    <div class="legend-item"><div class="icon icon-well">💧</div>Wells</div>
-    <div class="legend-item"><div class="icon icon-quarry">⛏</div>Quarries</div>
-    <div class="legend-item"><div class="icon icon-outpost">⛺</div>Outposts</div>
-  `;
-  return div;
-};
-legend.addTo(map);
-
 }
 </script>
 </body>
