@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
 
   <style>
     html,body{height:100%;margin:0;}
@@ -50,11 +51,9 @@
 
 <body>
   <div id="map"></div>
-  <input type="text" id="searchInput" placeholder="Search for Area..." style="position: absolute; top: 10px; left: 10px; z-index: 1000; padding: 5px;">
   
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-control-search/dist/leaflet-search.js"></script> <!-- Include Search Plugin -->
-
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
   <script>
     /* MAP */
     var map = L.map("map").setView([31.9038,35.2034],11);
@@ -157,6 +156,13 @@
       var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
       var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
 
+      /* SEARCH BAR for Areas */
+      var searchControl = new L.Control.GeoSearch({
+        provider: new L.GeoSearch.Provider.Google(),
+        searchLabel: 'Enter Area name...',
+        position: 'topright'
+      }).addTo(map);
+
       /* ORDER */
       areaALayer.bringToBack();
       areaBLayer.bringToBack();
@@ -183,61 +189,6 @@
       },{
         collapsed:false
       }).addTo(map);
-
-      /* LEGEND */
-      var legend=L.control({position:"bottomright"});
-      legend.onAdd=function(){
-        var div=L.DomUtil.create("div","legend");
-        div.innerHTML=` 
-          <b>Legend</b>
-          <div class="legend-item"><div style="width:14px;height:14px;background:#00ff00;border:2px solid #006400"></div>Area A</div>
-          <div class="legend-item"><div style="width:14px;height:14px;background:#ffff00;border:2px solid #b8860b"></div>Area B</div>
-          <div class="legend-item"><div style="width:14px;height:14px;background:#ff0000;border:2px solid #8b0000"></div>Area C</div>
-          <hr>
-          <div class="legend-item"><div class="icon icon-school"></div>Schools</div>
-          <div class="legend-item"><div class="icon icon-hospital"></div>Hospitals</div>
-          <div class="legend-item"><div class="icon icon-clinic"></div>Clinics</div>
-          <div class="legend-item"><div class="icon icon-well"></div>Wells</div>
-          <div class="legend-item"><div class="icon icon-quarry"></div>Quarries</div>
-          <div class="legend-item"><div class="icon icon-outpost"></div>Outposts</div>
-        `;
-        return div;
-      };
-      legend.addTo(map);
-
-      /* SEARCH FUNCTIONALITY */
-      const searchInput = document.getElementById('searchInput');
-      searchInput.addEventListener('input', function(event) {
-        const searchQuery = event.target.value.toLowerCase();
-
-        if (searchQuery.length >= 3) {
-          searchArea(searchQuery, areaALayer, areaBLayer, areaCLayer, schoolsLayer);
-        }
-      });
-
-      function searchArea(query, areaALayer, areaBLayer, areaCLayer, schoolsLayer) {
-        let result = { "Area A": 0, "Area B": 0, "Area C": 0 }; // Count schools per area
-        
-        [areaALayer, areaBLayer, areaCLayer].forEach(function(areaLayer) {
-          areaLayer.eachLayer(function(layer) {
-            let properties = layer.feature.properties;
-            if (properties.name.toLowerCase().includes(query)) {
-              // Count number of schools in each area
-              schoolsLayer.eachLayer(function(schoolLayer) {
-                let schoolProperties = schoolLayer.feature.properties;
-                if (schoolProperties.area === properties.name) {
-                  result[properties.name]++;
-                }
-              });
-
-              layer.openPopup();
-              map.setView(layer.getBounds().getCenter(), 12);
-              // Popup showing number of schools in the area
-              layer.bindPopup(`<b>${properties.name}</b><br>Number of schools: ${result[properties.name]}`).openPopup();
-            }
-          });
-        });
-      }
     }
   </script>
 </body>
