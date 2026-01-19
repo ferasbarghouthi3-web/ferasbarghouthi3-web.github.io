@@ -5,6 +5,7 @@
 <title>Web GIS – School Planning DSS</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
 
 <style>
 body { margin:0; font-family:Arial }
@@ -29,20 +30,6 @@ body { margin:0; font-family:Arial }
   z-index:1000;
   font-size:13px;
 }
-
-/* Legend */
-.legend {
-  background:white;
-  padding:8px;
-  font-size:12px;
-  line-height:18px;
-}
-.legend span {
-  display:inline-block;
-  width:14px;
-  height:14px;
-  margin-right:5px;
-}
 </style>
 </head>
 
@@ -62,28 +49,28 @@ body { margin:0; font-family:Arial }
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
 
 <script>
 // ================= MAP =================
-const map = L.map("map").setView([31.9,35.2],11);
+var map = L.map("map").setView([31.9,35.2],11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
 // ================= LOAD DATA =================
 Promise.all([
- fetch("tg.json").then(r=>r.json()),
+ fetch("ramallah.json").then(r=>r.json()),
  fetch("schools.json").then(r=>r.json()),
- fetch("roads.json").then(r=>r.json()),
- fetch("built_up.json").then(r=>r.json()),
- fetch("settlements.geojson").then(r=>r.json()),
- fetch("outposts.geojson").then(r=>r.json()),
- fetch("military.geojson").then(r=>r.json()),
- fetch("wadis.geojson").then(r=>r.json()),
- fetch("quarries.geojson").then(r=>r.json()),
- fetch("natural.geojson").then(r=>r.json()),
- fetch("wells.geojson").then(r=>r.json()),
- fetch("clinics.geojson").then(r=>r.json()),
- fetch("hospitals.geojson").then(r=>r.json())
+ fetch("roods.json").then(r=>r.json()),
+ fetch("Build_up.json").then(r=>r.json()),
+ fetch("Settlements.geojson").then(r=>r.json()),
+ fetch("Outposts.geojson").then(r=>r.json()),
+ fetch("Military sites.geojson").then(r=>r.json()),
+ fetch("Quarries.geojson").then(r=>r.json()),
+ fetch("natural.json").then(r=>r.json()),
+ fetch("Wells.geojson").then(r=>r.json()),
+ fetch("Clinics.geojson").then(r=>r.json()),
+ fetch("Hospitals.geojson").then(r=>r.json())
 ]).then(init);
 
 // ================= INIT =================
@@ -91,103 +78,70 @@ function init(d){
 
 let [
  tg, schools, roads, built,
- sett, outp, mil, wad,
- qua, nat, wells, clin, hosp
+ sett, outp, mil, qua,
+ nat, wells, clin, hosp
 ] = d;
 
-let deficitCount = 0;
-let siteCount = 0;
+let deficitCount=0, siteCount=0;
 
-// ================= LAYERS =================
-const builtL = L.geoJSON(built,{style:{color:"#999",fillOpacity:0.3}});
-const roadsL = L.geoJSON(roads,{style:{color:"orange"}});
-const settL  = L.geoJSON(sett,{style:{color:"red",fillOpacity:0.4}});
-const outpL  = L.geoJSON(outp,{style:{color:"darkred"}});
-const milL   = L.geoJSON(mil,{style:{color:"black"}});
-const wadL   = L.geoJSON(wad,{style:{color:"blue"}});
-const quaL   = L.geoJSON(qua,{style:{color:"brown"}});
-const natL   = L.geoJSON(nat,{style:{color:"green",fillOpacity:0.3}});
+// ===== DISPLAY LAYERS =====
+L.geoJSON(built,{style:{color:"#999",fillOpacity:0.3}}).addTo(map);
+L.geoJSON(roads,{style:{color:"orange"}}).addTo(map);
+L.geoJSON(sett,{style:{color:"red",fillOpacity:0.4}}).addTo(map);
+L.geoJSON(outp,{style:{color:"darkred"}}).addTo(map);
+L.geoJSON(mil,{style:{color:"black"}}).addTo(map);
+L.geoJSON(qua,{style:{color:"brown"}}).addTo(map);
+L.geoJSON(nat,{style:{color:"green"}}).addTo(map);
 
-const wellsL = L.geoJSON(wells,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:4,color:"purple"})});
-const clinL  = L.geoJSON(clin,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:4,color:"teal"})});
-const hospL  = L.geoJSON(hosp,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:4,color:"black"})});
-
-const schoolsL = L.geoJSON(schools,{
- pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:5,color:"blue"})
+[wells,clin,hosp].forEach(g=>{
+ L.geoJSON(g,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:4})}).addTo(map);
 });
 
-// ================= TG ANALYSIS =================
-const tgLayer = L.geoJSON(tg,{
+L.geoJSON(schools,{
+ pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:5,color:"blue"})
+}).addTo(map);
+
+// ===== MAIN ANALYSIS =====
+let tgLayer = L.geoJSON(tg,{
  style:f=>{
-  const pop=f.properties["تقديرات_السكان_2020"]||0;
-  const need=Math.ceil(pop/3000);
-  const cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
-  return {
-   color:"black",
-   fillColor: cnt<need?"red":"green",
-   fillOpacity:0.4
-  };
+   let pop=f.properties["تقديرات_السكان_2020"]||0;
+   let need=Math.ceil(pop/3000);
+   let cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
+   let diff=need-cnt;
+   let col= diff>=2?"red": diff==1?"orange":"green";
+   return {color:"black",fillOpacity:0.4,fillColor:col};
  },
  onEachFeature:(f,l)=>{
-  const pop=f.properties["تقديرات_السكان_2020"]||0;
-  const need=Math.ceil(pop/3000);
-  const cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
-  const deficit=cnt<need;
+   let pop=f.properties["تقديرات_السكان_2020"]||0;
+   let need=Math.ceil(pop/3000);
+   let cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
+   let deficit=cnt<need;
+   if(deficit) deficitCount++;
 
-  if(deficit){
-   deficitCount++;
-   const c=turf.centroid(f);
-   L.marker([c.geometry.coordinates[1],c.geometry.coordinates[0]])
-    .addTo(map)
-    .bindPopup("موقع مقترح");
-   siteCount++;
-  }
-
-  l.bindPopup(`
-   <b>${f.properties["اسم_التجمع"]}</b><br>
+   let html=`<b>${f.properties["اسم_التجمع"]}</b><br>
    السكان: ${pop}<br>
    المدارس: ${cnt}<br>
    المطلوب: ${need}<br>
-   الحالة: ${deficit?"نقص":"مكتفي"}
-  `);
+   الحالة: ${deficit?"نقص":"مكتفي"}`;
+
+   if(deficit){
+     let c=turf.centroid(f);
+
+     let score=70;
+     let price=120;
+
+     L.marker([c.geometry.coordinates[1],c.geometry.coordinates[0]])
+      .addTo(map)
+      .bindPopup(`<b>موقع مقترح</b><br>Score: ${score}/100<br>السعر: ${price}$`);
+
+     siteCount++;
+     html+=`<hr>Score: ${score}/100<br>السعر: ${price}$`;
+   }
+   l.bindPopup(html);
  }
-});
-
-// ================= ADD TO MAP =================
-[builtL,roadsL,settL,outpL,milL,wadL,quaL,natL,
- wellsL,clinL,hospL,schoolsL,tgLayer].forEach(l=>l.addTo(map));
-
-// ================= LAYER CONTROL =================
-L.control.layers(null,{
- "التجمعات":tgLayer,
- "المدارس":schoolsL,
- "الطرق":roadsL,
- "المناطق المبنية":builtL,
- "المستوطنات":settL,
- "البؤر الاستيطانية":outpL,
- "المواقع العسكرية":milL,
- "الأودية":wadL,
- "الكسارات":quaL,
- "المحميات":natL,
- "الآبار":wellsL,
- "العيادات":clinL,
- "المستشفيات":hospL
 }).addTo(map);
 
-// ================= LEGEND =================
-const legend = L.control({position:"bottomleft"});
-legend.onAdd = ()=>{
- const div=L.DomUtil.create("div","legend");
- div.innerHTML=`
- <b>Legend</b><br>
- <span style="background:red"></span> نقص مدارس<br>
- <span style="background:green"></span> مكتفي
- `;
- return div;
-};
-legend.addTo(map);
-
-// ================= DASHBOARD =================
+// ===== DASHBOARD =====
 document.getElementById("tTotal").innerText=tg.features.length;
 document.getElementById("tDef").innerText=deficitCount;
 document.getElementById("tSites").innerText=siteCount;
@@ -195,7 +149,5 @@ document.getElementById("tSites").innerText=siteCount;
 map.fitBounds(tgLayer.getBounds());
 }
 </script>
-
 </body>
 </html>
-
