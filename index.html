@@ -12,57 +12,46 @@ html,body{height:100%;margin:0;}
 #map{height:100%;width:100%;}
 
 /* =========================
-   ICONS (SMALL & CLEAR)
+   SMALL ICONS
 ========================= */
 .icon{
-  width:24px;
-  height:24px;
+  width:20px;
+  height:20px;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:16px;
+  font-size:14px;
   font-weight:bold;
   border:2px solid #000;
 }
 
-/* Hospital */
-.icon-hospital{
-  background:#b22222;
-  color:#fff;
-  border-radius:50%;
-}
-
-/* Clinic */
-.icon-clinic{
-  background:#2e8b57;
-  color:#fff;
-}
-
-/* School */
-.icon-school{
-  background:#1e90ff;
-  color:#fff;
-  border-radius:5px;
-}
-
-/* Well */
-.icon-well{
-  background:#00ced1;
-  color:#000;
-  border-radius:50%;
-}
-
-/* Quarry */
-.icon-quarry{
-  background:#696969;
-  color:#fff;
-}
-
-/* Outpost */
+/* Icon types */
+.icon-hospital{background:#b22222;color:#fff;border-radius:50%;}
+.icon-clinic{background:#2e8b57;color:#fff;}
+.icon-school{background:#1e90ff;color:#fff;border-radius:4px;}
+.icon-well{background:#00ced1;color:#000;border-radius:50%;}
+.icon-quarry{background:#696969;color:#fff;}
 .icon-outpost{
   background:#ff8c00;
   color:#000;
   clip-path:polygon(50% 0%,0% 100%,100% 100%);
+}
+
+/* =========================
+   LEGEND
+========================= */
+.legend{
+  background:white;
+  padding:10px;
+  font-size:13px;
+  line-height:22px;
+  border-radius:6px;
+  box-shadow:0 0 10px rgba(0,0,0,0.3);
+}
+.legend-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
 }
 </style>
 </head>
@@ -93,14 +82,14 @@ function popupAttributes(feature, layer){
 }
 
 /* =========================
-   DIV ICON FUNCTION
+   DIV ICON
 ========================= */
 function icon(symbol, cls){
   return L.divIcon({
     className:"",
     html:`<div class="icon ${cls}">${symbol}</div>`,
-    iconSize:[24,24],
-    iconAnchor:[12,12]
+    iconSize:[20,20],
+    iconAnchor:[10,10]
   });
 }
 
@@ -133,25 +122,18 @@ let [
   quarries,natural,wells,clinics,hospitals
 ] = data;
 
-/* Ramallah boundary */
 var ramallahLayer = L.geoJSON(ramallah,{
-  style:{color:"#000",weight:6,fillOpacity:0},
-  onEachFeature:popupAttributes
+  style:{color:"#000",weight:4,fillOpacity:0}
 }).addTo(map);
 
-/* Built-up */
 var builtLayer = L.geoJSON(built,{
-  style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},
-  onEachFeature:popupAttributes
+  style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7}
 }).addTo(map);
 
-/* Roads */
 var roadsLayer = L.geoJSON(roads,{
-  style:{color:"#4B0082",weight:2},
-  onEachFeature:popupAttributes
+  style:{color:"#4B0082",weight:2}
 }).addTo(map);
 
-/* Point layers */
 var schoolsLayer = L.geoJSON(schools,{
   pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
   onEachFeature:popupAttributes
@@ -182,23 +164,38 @@ var outpostsLayer = L.geoJSON(outposts,{
   onEachFeature:popupAttributes
 }).addTo(map);
 
-/* Other layers */
 var settlementsLayer = L.geoJSON(settlements,{
-  style:{color:"#ff0000",weight:2},
-  onEachFeature:popupAttributes
+  style:{color:"#ff0000",weight:2}
 }).addTo(map);
 
 var militaryLayer = L.geoJSON(military,{
-  style:{color:"#800000",weight:2},
-  onEachFeature:popupAttributes
+  style:{color:"#800000",weight:2}
 }).addTo(map);
 
 var naturalLayer = L.geoJSON(natural,{
-  style:{color:"#228b22",fillOpacity:0.5},
-  onEachFeature:popupAttributes
+  style:{color:"#228b22",fillOpacity:0.5}
 }).addTo(map);
 
-ramallahLayer.bringToFront();
+/* =========================
+   LEGEND CONTROL
+========================= */
+var legend = L.control({position:"bottomright"});
+
+legend.onAdd = function(){
+  var div = L.DomUtil.create("div","legend");
+  div.innerHTML = `
+    <b>Legend</b>
+    <div class="legend-item"><div class="icon icon-school">🎓</div> Schools</div>
+    <div class="legend-item"><div class="icon icon-hospital">✚</div> Hospitals</div>
+    <div class="legend-item"><div class="icon icon-clinic">✚</div> Clinics</div>
+    <div class="legend-item"><div class="icon icon-well">💧</div> Wells</div>
+    <div class="legend-item"><div class="icon icon-quarry">⛏</div> Quarries</div>
+    <div class="legend-item"><div class="icon icon-outpost">⛺</div> Outposts</div>
+  `;
+  return div;
+};
+
+legend.addTo(map);
 
 /* Layer control */
 L.control.layers(null,{
@@ -206,9 +203,9 @@ L.control.layers(null,{
   "Built-up Areas":builtLayer,
   "Roads":roadsLayer,
   "Schools":schoolsLayer,
-  "Wells":wellsLayer,
-  "Clinics":clinicsLayer,
   "Hospitals":hospitalsLayer,
+  "Clinics":clinicsLayer,
+  "Wells":wellsLayer,
   "Quarries":quarriesLayer,
   "Outposts":outpostsLayer,
   "Settlements":settlementsLayer,
