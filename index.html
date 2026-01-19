@@ -10,15 +10,38 @@
   <style>
     html,body{height:100%;margin:0;}
     #map{height:100%;width:100%;}
-    .icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;border:2px solid #000;}
-    .icon-school{background:#1e90ff;color:#fff;border-radius:4px;}
-    .icon-hospital{background:#b22222;color:#fff;border-radius:50%;}
-    .icon-clinic{background:#2e8b57;color:#fff;}
-    .icon-well{background:#00ced1;color:#000;border-radius:50%;}
-    .icon-quarry{background:#696969;color:#fff;}
-    .icon-outpost{background:#ff8c00;color:#000;clip-path:polygon(50% 0%,0% 100%,100% 100%);}
-    .legend{background:white;padding:10px;font-size:13px;border-radius:6px;box-shadow:0 0 10px rgba(0,0,0,0.3);}
-    .legend-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+    .icon{
+      width:10px;height:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:14px;
+      font-weight:bold;
+      border-radius:50%;
+    }
+    /* LANDMARK COLORS */
+    .icon-school{background:#1e90ff;}
+    .icon-hospital{background:#b22222;}
+    .icon-clinic{background:#2e8b57;}
+    .icon-well{background:#00ced1;}
+    .icon-quarry{background:#696969;}
+    .icon-outpost{background:#ff8c00;}
+    
+    /* LEGEND */
+    .legend{
+      background:white;
+      padding:10px;
+      font-size:13px;
+      border-radius:6px;
+      box-shadow:0 0 10px rgba(0,0,0,0.3);
+    }
+    .legend-item{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      margin-bottom:4px;
+    }
+    /* POPUP */
     .popup-table{border-collapse:collapse;width:100%;}
     .popup-table td{border-bottom:1px solid #ddd;padding:4px;font-size:12px;}
     .popup-title{font-weight:bold;margin-bottom:6px;}
@@ -27,7 +50,7 @@
 
 <body>
   <div id="map"></div>
-  
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     /* MAP */
@@ -48,12 +71,12 @@
     }
 
     /* ICON */
-    function icon(symbol, cls){
+    function icon(cls){
       return L.divIcon({
         className:"",
-        html:`<div class="icon ${cls}">${symbol}</div>`,
-        iconSize:[20,20],
-        iconAnchor:[10,10]
+        html:`<div class="icon ${cls}"></div>`,
+        iconSize:[10,10],
+        iconAnchor:[5,5]
       });
     }
 
@@ -97,32 +120,32 @@
 
       /* POINTS */
       var schoolsLayer=L.geoJSON(schools,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
+        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-school")}),
         onEachFeature:popupAttributes
       }).addTo(map);
 
       var hospitalsLayer=L.geoJSON(hospitals,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),
+        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-hospital")}),
         onEachFeature:popupAttributes
       }).addTo(map);
 
       var clinicsLayer=L.geoJSON(clinics,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),
+        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-clinic")}),
         onEachFeature:popupAttributes
       }).addTo(map);
 
       var wellsLayer=L.geoJSON(wells,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")}),
+        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-well")}),
         onEachFeature:popupAttributes
       }).addTo(map);
 
       var quarriesLayer=L.geoJSON(quarries,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")}),
+        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-quarry")}),
         onEachFeature:popupAttributes
       }).addTo(map);
 
       var outpostsLayer=L.geoJSON(outposts,{
-        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),
+        pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("icon-outpost")}),
         onEachFeature:popupAttributes
       }).addTo(map);
 
@@ -168,12 +191,12 @@
           <div class="legend-item"><div style="width:14px;height:14px;background:#ffff00;border:2px solid #b8860b"></div>Area B</div>
           <div class="legend-item"><div style="width:14px;height:14px;background:#ff0000;border:2px solid #8b0000"></div>Area C</div>
           <hr>
-          <div class="legend-item"><div class="icon icon-school">🎓</div>Schools</div>
-          <div class="legend-item"><div class="icon icon-hospital">✚</div>Hospitals</div>
-          <div class="legend-item"><div class="icon icon-clinic">✚</div>Clinics</div>
-          <div class="legend-item"><div class="icon icon-well">💧</div>Wells</div>
-          <div class="legend-item"><div class="icon icon-quarry">⛏</div>Quarries</div>
-          <div class="legend-item"><div class="icon icon-outpost">⛺</div>Outposts</div>
+          <div class="legend-item"><div class="icon icon-school"></div>Schools</div>
+          <div class="legend-item"><div class="icon icon-hospital"></div>Hospitals</div>
+          <div class="legend-item"><div class="icon icon-clinic"></div>Clinics</div>
+          <div class="legend-item"><div class="icon icon-well"></div>Wells</div>
+          <div class="legend-item"><div class="icon icon-quarry"></div>Quarries</div>
+          <div class="legend-item"><div class="icon icon-outpost"></div>Outposts</div>
         `;
         return div;
       };
