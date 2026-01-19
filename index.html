@@ -6,7 +6,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -45,7 +45,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 /* =========================
-   3. Popup من الـ Attributes
+   3. دالة إنشاء Popup من الـ Attributes
 ========================= */
 function popupAttributes(feature, layer) {
   if (feature.properties) {
@@ -58,66 +58,66 @@ function popupAttributes(feature, layer) {
 }
 
 /* =========================
-   4. الأيقونات
+   4. إعداد الأيقونات
 ========================= */
 var schoolIcon = L.icon({
-  iconUrl: "./icons/school.png",
-  iconSize: [28,28],
-  iconAnchor: [14,14],
-  popupAnchor: [0,-14]
+  iconUrl: 'icons/school.png',
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
 });
 
 var wellIcon = L.icon({
-  iconUrl: "./icons/well.png",
-  iconSize: [22,22],
-  iconAnchor: [11,11],
-  popupAnchor: [0,-11]
+  iconUrl: 'icons/well.png',
+  iconSize: [20,20],
+  iconAnchor: [10,10],
+  popupAnchor: [0,-10]
 });
 
 var quarryIcon = L.icon({
-  iconUrl: "./icons/pickaxe.png",
-  iconSize: [26,26],
-  iconAnchor: [13,13],
-  popupAnchor: [0,-13]
+  iconUrl: 'icons/pickaxe.png', // بيكاكس
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
 });
 
 var outpostIcon = L.icon({
-  iconUrl: "./icons/red_tent.png",
-  iconSize: [26,26],
-  iconAnchor: [13,13],
-  popupAnchor: [0,-13]
+  iconUrl: 'icons/red_tent.png', // خيمة حمراء
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
 });
 
 var hospitalIcon = L.icon({
-  iconUrl: "./icons/hospital_h.png",
-  iconSize: [30,30],
-  iconAnchor: [15,15],
-  popupAnchor: [0,-15]
+  iconUrl: 'icons/hospital.png',
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
 });
 
 var clinicIcon = L.icon({
-  iconUrl: "./icons/clinic.png",
-  iconSize: [26,26],
-  iconAnchor: [13,13],
-  popupAnchor: [0,-13]
+  iconUrl: 'icons/clinic.png',
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
 });
 
 /* =========================
-   5. تحميل البيانات
+   5. تحميل الطبقات
 ========================= */
 Promise.all([
-  fetch("data/ramallah.geojson").then(r => r.json()),
-  fetch("data/schools.geojson").then(r => r.json()),
-  fetch("data/roads.geojson").then(r => r.json()),
-  fetch("data/built_up.geojson").then(r => r.json()),
-  fetch("data/settlements.geojson").then(r => r.json()),
-  fetch("data/outposts.geojson").then(r => r.json()),
-  fetch("data/military_sites.geojson").then(r => r.json()),
-  fetch("data/quarries.geojson").then(r => r.json()),
-  fetch("data/natural.geojson").then(r => r.json()),
-  fetch("data/wells.geojson").then(r => r.json()),
-  fetch("data/clinics.geojson").then(r => r.json()),
-  fetch("data/hospitals.geojson").then(r => r.json())
+  fetch("ramallah.json").then(r => r.json()),
+  fetch("schools.json").then(r => r.json()),
+  fetch("roods.json").then(r => r.json()),
+  fetch("Built_up.json").then(r => r.json()),
+  fetch("Settlements.geojson").then(r => r.json()),
+  fetch("Outposts.geojson").then(r => r.json()),
+  fetch("Military sites.geojson").then(r => r.json()),
+  fetch("Quarries.geojson").then(r => r.json()),
+  fetch("natural.json").then(r => r.json()),
+  fetch("Wells.geojson").then(r => r.json()),
+  fetch("Clinics.geojson").then(r => r.json()),
+  fetch("Hospitals.geojson").then(r => r.json())
 ]).then(initLayers);
 
 /* =========================
@@ -140,95 +140,102 @@ function initLayers(data) {
     hospitals
   ] = data;
 
-  /* حدود رام الله */
+  /* رام الله - بوردر فقط */
   var ramallahLayer = L.geoJSON(ramallah, {
     style: {
       color: "#000000",
-      weight: 6,
+      weight: 3,
       fillOpacity: 0
     },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* المدارس */
+  /* المدارس مع أيقونة */
   var schoolsLayer = L.geoJSON(schools, {
-    pointToLayer: (f, latlng) => L.marker(latlng, { icon: schoolIcon }),
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: schoolIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* الطرق */
+  /* الطرق باللون السكني الغامق */
   var roadsLayer = L.geoJSON(roads, {
     style: { color: "#4B0082", weight: 2 },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* المناطق المبنية */
+  /* Built-up Areas مع إبراز الحدود لكل تجمع */
   var builtLayer = L.geoJSON(built, {
-    style: {
-      color: "#8B4513",
-      weight: 2,
-      fillColor: "#F5F5DC",
-      fillOpacity: 0.6
+    style: function(feature) {
+      return {
+        color: "#8B4513",      // الحدود داكنة وواضحة
+        fillColor: "#F5F5DC",
+        weight: 3,
+        fillOpacity: 0.7
+      };
     },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* المستوطنات */
+  /* طبقات النقاط مع أيقونات */
   var settlementsLayer = L.geoJSON(settlements, {
     style: { color: "#FF0000", weight: 2 },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* البؤر */
   var outpostsLayer = L.geoJSON(outposts, {
-    pointToLayer: (f, latlng) => L.marker(latlng, { icon: outpostIcon }),
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: outpostIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* المواقع العسكرية */
   var militaryLayer = L.geoJSON(military, {
     style: { color: "#800000", weight: 2 },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* الكسارات */
   var quarriesLayer = L.geoJSON(quarries, {
-    pointToLayer: (f, latlng) => L.marker(latlng, { icon: quarryIcon }),
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: quarryIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* المناطق الطبيعية */
   var naturalLayer = L.geoJSON(natural, {
     style: { color: "#228B22", fillOpacity: 0.5 },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* الآبار */
   var wellsLayer = L.geoJSON(wells, {
-    pointToLayer: (f, latlng) => L.marker(latlng, { icon: wellIcon }),
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: wellIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* العيادات */
   var clinicsLayer = L.geoJSON(clinics, {
-    pointToLayer: (f, latlng) => L.marker(latlng, { icon: clinicIcon }),
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: clinicIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  /* المستشفيات */
   var hospitalsLayer = L.geoJSON(hospitals, {
-    pointToLayer: (f, latlng) => L.marker(latlng, { icon: hospitalIcon }),
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: hospitalIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
-  ramallahLayer.bringToFront();
-
-  /* التحكم بالطبقات */
+  /* =========================
+     7. Layer Control
+  ========================= */
   L.control.layers(null, {
     "Ramallah Boundary": ramallahLayer,
-    "Built-up Areas": builtLayer,
-    "Roads": roadsLayer,
     "Schools": schoolsLayer,
+    "Roads": roadsLayer,
+    "Built-up Areas": builtLayer,
     "Settlements": settlementsLayer,
     "Outposts": outpostsLayer,
     "Military Sites": militaryLayer,
