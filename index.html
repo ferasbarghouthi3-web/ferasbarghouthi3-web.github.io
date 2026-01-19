@@ -62,7 +62,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
   attribution:"&copy; OpenStreetMap"
 }).addTo(map);
 
-/* POPUP */
+/* POPUP FUNCTION */
 function popupAttributes(feature, layer){
   if(!feature.properties) return;
   let html='<div class="popup-title">Attributes</div><table class="popup-table">';
@@ -119,26 +119,49 @@ var ramallahLayer=L.geoJSON(ramallah,{
 }).addTo(map);
 
 /* LAND CLASSIFICATION */
-var areaALayer=L.geoJSON(areaA,{style:{color:"#006400",weight:2,fillColor:"#00ff00",fillOpacity:0.35}}).addTo(map);
-var areaBLayer=L.geoJSON(areaB,{style:{color:"#b8860b",weight:2,fillColor:"#ffff00",fillOpacity:0.35}}).addTo(map);
-var areaCLayer=L.geoJSON(areaC,{style:{color:"#8b0000",weight:2,fillColor:"#ff0000",fillOpacity:0.35}}).addTo(map);
+var areaALayer=L.geoJSON(areaA,{style:{color:"#006400",weight:2,fillColor:"#00ff00",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
+var areaBLayer=L.geoJSON(areaB,{style:{color:"#b8860b",weight:2,fillColor:"#ffff00",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
+var areaCLayer=L.geoJSON(areaC,{style:{color:"#8b0000",weight:2,fillColor:"#ff0000",fillOpacity:0.35},onEachFeature:popupAttributes}).addTo(map);
 
 /* BASE */
-var builtLayer=L.geoJSON(built,{style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7}}).addTo(map);
-var roadsLayer=L.geoJSON(roads,{style:{color:"#4B0082",weight:2}}).addTo(map);
+var builtLayer=L.geoJSON(built,{style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},onEachFeature:popupAttributes}).addTo(map);
+var roadsLayer=L.geoJSON(roads,{style:{color:"#4B0082",weight:2},onEachFeature:popupAttributes}).addTo(map);
 
-/* POINTS */
-var schoolsLayer=L.geoJSON(schools,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")})}).addTo(map);
-var hospitalsLayer=L.geoJSON(hospitals,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")})}).addTo(map);
-var clinicsLayer=L.geoJSON(clinics,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")})}).addTo(map);
-var wellsLayer=L.geoJSON(wells,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")})}).addTo(map);
-var quarriesLayer=L.geoJSON(quarries,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")})}).addTo(map);
-var outpostsLayer=L.geoJSON(outposts,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")})}).addTo(map);
+/* POINTS — 🔹 Popup Added Here Only */
+var schoolsLayer=L.geoJSON(schools,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var hospitalsLayer=L.geoJSON(hospitals,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var clinicsLayer=L.geoJSON(clinics,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var wellsLayer=L.geoJSON(wells,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var quarriesLayer=L.geoJSON(quarries,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
+
+var outpostsLayer=L.geoJSON(outposts,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),
+  onEachFeature:popupAttributes
+}).addTo(map);
 
 /* POLYGONS */
-var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000",weight:2}}).addTo(map);
-var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2}}).addTo(map);
-var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5}}).addTo(map);
+var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000",weight:2},onEachFeature:popupAttributes}).addTo(map);
+var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
+var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
 
 /* ORDER */
 areaALayer.bringToBack();
