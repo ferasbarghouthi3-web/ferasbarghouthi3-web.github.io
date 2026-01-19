@@ -58,7 +58,53 @@ function popupAttributes(feature, layer) {
 }
 
 /* =========================
-   4. تحميل الطبقات
+   4. إعداد الأيقونات
+========================= */
+var schoolIcon = L.icon({
+  iconUrl: 'icons/school.png',
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
+});
+
+var wellIcon = L.icon({
+  iconUrl: 'icons/well.png',
+  iconSize: [20,20],
+  iconAnchor: [10,10],
+  popupAnchor: [0,-10]
+});
+
+var quarryIcon = L.icon({
+  iconUrl: 'icons/pickaxe.png', // بيكاكس
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
+});
+
+var outpostIcon = L.icon({
+  iconUrl: 'icons/red_tent.png', // خيمة حمراء
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
+});
+
+// أيقونة المستشفيات على شكل H زرقاء
+var hospitalIcon = L.icon({
+  iconUrl: 'icons/hospital_h.png', // ضع هنا صورة H زرقاء
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
+});
+
+var clinicIcon = L.icon({
+  iconUrl: 'icons/clinic.png',
+  iconSize: [25,25],
+  iconAnchor: [12,12],
+  popupAnchor: [0,-12]
+});
+
+/* =========================
+   5. تحميل الطبقات
 ========================= */
 Promise.all([
   fetch("ramallah.json").then(r => r.json()),
@@ -76,7 +122,7 @@ Promise.all([
 ]).then(initLayers);
 
 /* =========================
-   5. عرض الطبقات
+   6. عرض الطبقات
 ========================= */
 function initLayers(data) {
 
@@ -105,33 +151,43 @@ function initLayers(data) {
     onEachFeature: popupAttributes
   }).addTo(map);
 
+  /* المدارس مع أيقونة */
   var schoolsLayer = L.geoJSON(schools, {
-    onEachFeature: popupAttributes
-  }).addTo(map);
-
-  var roadsLayer = L.geoJSON(roads, {
-    style: { color: "#8B4513", weight: 2 },
-    onEachFeature: popupAttributes
-  }).addTo(map);
-
-  /* Built-up لون بيج فاتح */
-  var builtLayer = L.geoJSON(built, {
-    style: {
-      color: "#D2B48C",
-      fillColor: "#F5F5DC",
-      weight: 1,
-      fillOpacity: 0.7
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: schoolIcon });
     },
     onEachFeature: popupAttributes
   }).addTo(map);
 
+  /* الطرق باللون السكني الغامق */
+  var roadsLayer = L.geoJSON(roads, {
+    style: { color: "#4B0082", weight: 2 },
+    onEachFeature: popupAttributes
+  }).addTo(map);
+
+  /* Built-up Areas مع إبراز الحدود لكل تجمع */
+  var builtLayer = L.geoJSON(built, {
+    style: function(feature) {
+      return {
+        color: "#8B4513",      // الحدود داكنة وواضحة
+        fillColor: "#F5F5DC",
+        weight: 3,
+        fillOpacity: 0.7
+      };
+    },
+    onEachFeature: popupAttributes
+  }).addTo(map);
+
+  /* طبقات النقاط مع أيقونات */
   var settlementsLayer = L.geoJSON(settlements, {
     style: { color: "#FF0000", weight: 2 },
     onEachFeature: popupAttributes
   }).addTo(map);
 
   var outpostsLayer = L.geoJSON(outposts, {
-    style: { color: "#FF8C00", weight: 2 },
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: outpostIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
@@ -141,7 +197,9 @@ function initLayers(data) {
   }).addTo(map);
 
   var quarriesLayer = L.geoJSON(quarries, {
-    style: { color: "#708090", weight: 2 },
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: quarryIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
@@ -151,19 +209,28 @@ function initLayers(data) {
   }).addTo(map);
 
   var wellsLayer = L.geoJSON(wells, {
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: wellIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
   var clinicsLayer = L.geoJSON(clinics, {
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: clinicIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
   var hospitalsLayer = L.geoJSON(hospitals, {
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng, { icon: hospitalIcon });
+    },
     onEachFeature: popupAttributes
   }).addTo(map);
 
   /* =========================
-     6. Layer Control
+     7. Layer Control
   ========================= */
   L.control.layers(null, {
     "Ramallah Boundary": ramallahLayer,
