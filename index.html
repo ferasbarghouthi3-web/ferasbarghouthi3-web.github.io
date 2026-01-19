@@ -6,27 +6,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 
 <style>
 html,body{height:100%;margin:0;}
 #map{height:100%;width:100%;}
 
 /* ICONS */
-.icon{
-  width:20px;height:20px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:14px;
-  font-weight:bold;
-  border:2px solid #000;
+.icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
 }
-.icon-school{background:#1e90ff;color:#fff;border-radius:4px;}
-.icon-hospital{background:#b22222;color:#fff;border-radius:50%;}
-.icon-clinic{background:#2e8b57;color:#fff;}
-.icon-well{background:#00ced1;color:#000;border-radius:50%;}
-.icon-quarry{background:#696969;color:#fff;}
-.icon-outpost{background:#ff8c00;color:#000;clip-path:polygon(50% 0%,0% 100%,100% 100%);}
 
 /* LEGEND */
 .legend{
@@ -54,20 +47,9 @@ html,body{height:100%;margin:0;}
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
 <script>
-
-/* DYNAMIC POINT SIZE */
-function getRadius(){
-  return Math.max(map.getZoom() - 6, 3);
-}
-
-map.on("zoomend", function(){
-  map.eachLayer(function(layer){
-    if(layer.setRadius){
-      layer.setRadius(getRadius());
-    }
-  });
-});
 
 /* MAP */
 var map = L.map("map").setView([31.9038,35.2034],11);
@@ -86,13 +68,29 @@ function popupAttributes(feature, layer){
   layer.bindPopup(html);
 }
 
-/* ICON */
-function icon(symbol, cls){
+/* ICONS */
+function icon(type) {
+  let color;
+  switch(type) {
+    case "school": color = "blue"; break;
+    case "hospital": color = "red"; break;
+    case "clinic": color = "green"; break;
+    case "well": color = "cyan"; break;
+    case "quarry": color = "grey"; break;
+    case "outpost": color = "orange"; break;
+    default: color = "black"; break;
+  }
+
   return L.divIcon({
-    className:"",
-    html:`<div class="icon ${cls}">${symbol}</div>`,
-    iconSize:[20,20],
-    iconAnchor:[10,10]
+    className: "icon",
+    style: {
+      backgroundColor: color,
+      border: "2px solid #000",
+      width: "12px",
+      height: "12px"
+    },
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
   });
 }
 
@@ -117,7 +115,6 @@ Promise.all([
 
 /* LAYERS */
 function initLayers(data){
-
 let [
   ramallah,schools,roads,built,
   settlements,outposts,military,
@@ -140,72 +137,39 @@ var areaCLayer=L.geoJSON(areaC,{style:{color:"#8b0000",weight:2,fillColor:"#ff00
 var builtLayer=L.geoJSON(built,{style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},onEachFeature:popupAttributes}).addTo(map);
 var roadsLayer=L.geoJSON(roads,{style:{color:"#4B0082",weight:2},onEachFeature:popupAttributes}).addTo(map);
 
-/* POINTS — 🔹 Popup Added Here Only */
+/* CLUSTERING */
+var markers = L.markerClusterGroup();
+
+/* POINTS */
 var schoolsLayer=L.geoJSON(schools,{
-  pointToLayer:(f,ll)=>L.circleMarker(ll,{
-    radius:getRadius(),
-    fillColor:"#1e90ff",
-    color:"#000",
-    weight:1,
-    fillOpacity:0.9
-  }),
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("school")}),
   onEachFeature:popupAttributes
-}).addTo(map);
+}).addTo(markers);
 
 var hospitalsLayer=L.geoJSON(hospitals,{
-  pointToLayer:(f,ll)=>L.circleMarker(ll,{
-    radius:getRadius(),
-    fillColor:"#b22222",
-    color:"#000",
-    weight:1,
-    fillOpacity:0.9
-  }),
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("hospital")}),
   onEachFeature:popupAttributes
-}).addTo(map);
+}).addTo(markers);
 
 var clinicsLayer=L.geoJSON(clinics,{
-  pointToLayer:(f,ll)=>L.circleMarker(ll,{
-    radius:getRadius(),
-    fillColor:"#2e8b57",
-    color:"#000",
-    weight:1,
-    fillOpacity:0.9
-  }),
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("clinic")}),
   onEachFeature:popupAttributes
-}).addTo(map);
+}).addTo(markers);
 
 var wellsLayer=L.geoJSON(wells,{
-  pointToLayer:(f,ll)=>L.circleMarker(ll,{
-    radius:getRadius(),
-    fillColor:"#00ced1",
-    color:"#000",
-    weight:1,
-    fillOpacity:0.9
-  }),
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("well")}),
   onEachFeature:popupAttributes
-}).addTo(map);
+}).addTo(markers);
 
 var quarriesLayer=L.geoJSON(quarries,{
-  pointToLayer:(f,ll)=>L.circleMarker(ll,{
-    radius:getRadius(),
-    fillColor:"#696969",
-    color:"#000",
-    weight:1,
-    fillOpacity:0.9
-  }),
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("quarry")}),
   onEachFeature:popupAttributes
-}).addTo(map);
+}).addTo(markers);
 
 var outpostsLayer=L.geoJSON(outposts,{
-  pointToLayer:(f,ll)=>L.circleMarker(ll,{
-    radius:getRadius(),
-    fillColor:"#ff8c00",
-    color:"#000",
-    weight:1,
-    fillOpacity:0.9
-  }),
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("outpost")}),
   onEachFeature:popupAttributes
-}).addTo(map);
+}).addTo(markers);
 
 /* POLYGONS */
 var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000",weight:2},onEachFeature:popupAttributes}).addTo(map);
@@ -217,6 +181,9 @@ areaALayer.bringToBack();
 areaBLayer.bringToBack();
 areaCLayer.bringToBack();
 ramallahLayer.bringToFront();
+
+/* ADD CLUSTERED MARKERS */
+map.addLayer(markers);
 
 /* LAYER CONTROL */
 L.control.layers(null,{
@@ -247,20 +214,17 @@ legend.onAdd=function(){
     <div class="legend-item"><div style="width:14px;height:14px;background:#ffff00;border:2px solid #b8860b"></div>Area B</div>
     <div class="legend-item"><div style="width:14px;height:14px;background:#ff0000;border:2px solid #8b0000"></div>Area C</div>
     <hr>
-    <div class="legend-item"><div class="icon icon-school">🎓</div>Schools</div>
-    <div class="legend-item"><div class="icon icon-hospital">✚</div>Hospitals</div>
-    <div class="legend-item"><div class="icon icon-clinic">✚</div>Clinics</div>
-    <div class="legend-item"><div class="icon icon-well">💧</div>Wells</div>
-    <div class="legend-item"><div class="icon icon-quarry">⛏</div>Quarries</div>
-    <div class="legend-item"><div class="icon icon-outpost">⛺</div>Outposts</div>
+    <div class="legend-item"><div style="width:12px;height:12px;background:#1e90ff;border-radius:50%"></div>Schools</div>
+    <div class="legend-item"><div style="width:12px;height:12px;background:#b22222;border-radius:50%"></div>Hospitals</div>
+    <div class="legend-item"><div style="width:12px;height:12px;background:#2e8b57;border-radius:50%"></div>Clinics</div>
+    <div class="legend-item"><div style="width:12px;height:12px;background:#00ced1;border-radius:50%"></div>Wells</div>
+    <div class="legend-item"><div style="width:12px;height:12px;background:#696969;border-radius:50%"></div>Quarries</div>
+    <div class="legend-item"><div style="width:12px;height:12px;background:#ff8c00;border-radius:50%"></div>Outposts</div>
   `;
   return div;
 };
 legend.addTo(map);
 
-}
 </script>
 </body>
 </html>
-
-
