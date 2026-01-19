@@ -50,8 +50,11 @@
 
 <body>
   <div id="map"></div>
-
+  <input type="text" id="searchInput" placeholder="Search for School or Area..." style="position: absolute; top: 10px; left: 10px; z-index: 1000; padding: 5px;">
+  
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-control-search/dist/leaflet-search.js"></script> <!-- Include Search Plugin -->
+
   <script>
     /* MAP */
     var map = L.map("map").setView([31.9038,35.2034],11);
@@ -185,7 +188,7 @@
       var legend=L.control({position:"bottomright"});
       legend.onAdd=function(){
         var div=L.DomUtil.create("div","legend");
-        div.innerHTML=`
+        div.innerHTML=` 
           <b>Legend</b>
           <div class="legend-item"><div style="width:14px;height:14px;background:#00ff00;border:2px solid #006400"></div>Area A</div>
           <div class="legend-item"><div style="width:14px;height:14px;background:#ffff00;border:2px solid #b8860b"></div>Area B</div>
@@ -201,7 +204,38 @@
         return div;
       };
       legend.addTo(map);
+
+      /* SEARCH FUNCTIONALITY */
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('input', function(event) {
+        const searchQuery = event.target.value.toLowerCase();
+
+        if (searchQuery.length >= 3) {
+          searchSchoolOrArea(searchQuery, schoolsLayer, areaALayer, areaBLayer, areaCLayer);
+        }
+      });
+
+      function searchSchoolOrArea(query, schoolsLayer, areaALayer, areaBLayer, areaCLayer) {
+        schoolsLayer.eachLayer(function(layer) {
+          let properties = layer.feature.properties;
+          if (properties.name.toLowerCase().includes(query)) {
+            layer.openPopup();
+            map.setView(layer.getLatLng(), 12);
+          }
+        });
+
+        [areaALayer, areaBLayer, areaCLayer].forEach(function(areaLayer) {
+          areaLayer.eachLayer(function(layer) {
+            let properties = layer.feature.properties;
+            if (properties.name.toLowerCase().includes(query)) {
+              layer.openPopup();
+              map.setView(layer.getBounds().getCenter(), 12);
+            }
+          });
+        });
+      }
     }
   </script>
 </body>
 </html>
+
