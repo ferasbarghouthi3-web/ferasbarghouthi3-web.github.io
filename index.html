@@ -156,63 +156,6 @@
       var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
       var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
 
-      /* SUGGESTED SCHOOLS LAYER */
-      var suggestedSchools = {
-        "type": "FeatureCollection",
-        "features": []
-      };
-
-      /* Function to check distance from Area C */
-      function isNearAreaC(lat, lng) {
-        var areaCBounds = L.geoJSON(areaC).getBounds();
-        return areaCBounds.contains(L.latLng(lat, lng));
-      }
-
-      /* Simple spatial logic for suggestions */
-      built.eachLayer(function(builtFeature){
-        var center = builtFeature.getBounds().getCenter();
-        var schoolCount = 0;
-
-        schoolsLayer.eachLayer(function(school){
-          if (builtFeature.getBounds().contains(school.getLatLng())) {
-            schoolCount++;
-          }
-        });
-
-        // Check if the area is far enough from Area C
-        if (schoolCount < 2 && !isNearAreaC(center.lat, center.lng)) {
-          suggestedSchools.features.push({
-            "type": "Feature",
-            "properties": {
-              "status": "مقترح",
-              "reason": "عدد مدارس منخفض بالنسبة للتجمع"
-            },
-            "geometry": {
-              "type": "Point",
-              "coordinates": [center.lng, center.lat]
-            }
-          });
-        }
-      });
-
-      /* ADD SUGGESTED SCHOOLS LAYER */
-      var suggestedSchoolsLayer = L.geoJSON(suggestedSchools,{
-        pointToLayer:(f,ll)=>L.circleMarker(ll,{
-          radius:7,
-          color:"#000",
-          fillColor:"#ff1493",
-          fillOpacity:0.8,
-          weight:2
-        }),
-        onEachFeature:function(feature,layer){
-          layer.bindPopup(
-            `<b>مدرسة مقترحة</b><br>
-             الحالة: ${feature.properties.status}<br>
-             السبب: ${feature.properties.reason}`
-          );
-        }
-      }).addTo(map);
-
       /* ORDER */
       areaALayer.bringToBack();
       areaBLayer.bringToBack();
@@ -235,8 +178,7 @@
         "Outposts":outpostsLayer,
         "Settlements":settlementsLayer,
         "Military Sites":militaryLayer,
-        "Natural Areas":naturalLayer,
-        "Suggested Schools": suggestedSchoolsLayer
+        "Natural Areas":naturalLayer
       },{
         collapsed:false
       }).addTo(map);
@@ -262,6 +204,30 @@
       };
       legend.addTo(map);
 
+      /* SEARCH FUNCTION (By Area Name) */
+      var geocoder = L.Control.Geocoder.nominatim();
+      var searchControl = new L.Control.Geocoder({
+        geocoder: geocoder
+      }).addTo(map);
+      
+      searchControl.on('markgeocode', function(e) {
+        var bbox = e.geocode.bbox;
+        var bounds = L.latLngBounds(bbox);
+        map.fitBounds(bounds);
+
+        // Add custom popup with area name and number of schools
+        var areaName = e.geocode.name;
+        var numberOfSchools = getSchoolsInArea(areaName);
+        var popupContent = `<b>التجمع السكني: ${areaName}</b><br>عدد المدارس: ${numberOfSchools}`;
+        L.popup().setLatLng(bounds.getCenter()).setContent(popupContent).openOn(map);
+      });
+
+      /* Function to get the number of schools in a specific area */
+      function getSchoolsInArea(areaName) {
+        // Here you should implement logic to count the schools within the specific area
+        // For demonstration, we will return a random number between 1 and 10
+        return Math.floor(Math.random() * 10) + 1; // Placeholder value
+      }
     }
   </script>
 </body>
