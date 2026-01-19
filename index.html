@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
   <title>Web GIS - Ramallah</title>
@@ -59,10 +59,10 @@
       attribution:"&copy; OpenStreetMap"
     }).addTo(map);
 
-    /* POPUP FUNCTION */
+    /* POPUP FUNCTION (with Arabic Labels) */
     function popupAttributes(feature, layer){
       if(!feature.properties) return;
-      let html='<div class="popup-title">Attributes</div><table class="popup-table">';
+      let html='<div class="popup-title">الخصائص</div><table class="popup-table">';
       for(let k in feature.properties){
         html+=`<tr><td><b>${k}</b></td><td>${feature.properties[k]}</td></tr>`;
       }
