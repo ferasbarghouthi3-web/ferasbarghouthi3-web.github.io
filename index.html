@@ -224,9 +224,12 @@
 
       /* Function to get the number of schools in a specific area */
       function getSchoolsInArea(areaName) {
-        // Here you should implement logic to count the schools within the specific area
-        // For demonstration, we will return a random number between 1 and 10
-        return Math.floor(Math.random() * 10) + 1; // Placeholder value
+        // Filter schools by area name (this assumes schools data has an 'area' property)
+        var areaSchools = schools.features.filter(function(school) {
+          return school.properties.area === areaName; // Adjust this based on your data structure
+        });
+
+        return areaSchools.length; // Return the number of schools in the area
       }
     }
   </script>
