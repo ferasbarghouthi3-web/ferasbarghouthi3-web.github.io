@@ -7,6 +7,7 @@
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css"/>
 
   <style>
     html,body{height:100%;margin:0;}
@@ -54,6 +55,8 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+
   <script>
     /* MAP */
     var map = L.map("map").setView([31.9038,35.2034],11);
@@ -224,12 +227,10 @@
 
       /* Function to get the number of schools in a specific area */
       function getSchoolsInArea(areaName) {
-        // Filter schools by area name (this assumes schools data has an 'area' property)
         var areaSchools = schools.features.filter(function(school) {
-          return school.properties.area === areaName; // Adjust this based on your data structure
+          return school.properties.area === areaName;
         });
-
-        return areaSchools.length; // Return the number of schools in the area
+        return areaSchools.length;
       }
     }
   </script>
