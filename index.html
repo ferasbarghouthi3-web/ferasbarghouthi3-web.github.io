@@ -12,7 +12,7 @@ html,body{height:100%;margin:0;}
 #map{height:100%;width:100%;}
 
 /* =========================
-   SMALL ICONS
+   ICONS
 ========================= */
 .icon{
   width:20px;
@@ -25,10 +25,9 @@ html,body{height:100%;margin:0;}
   border:2px solid #000;
 }
 
-/* Icon types */
+.icon-school{background:#1e90ff;color:#fff;border-radius:4px;}
 .icon-hospital{background:#b22222;color:#fff;border-radius:50%;}
 .icon-clinic{background:#2e8b57;color:#fff;}
-.icon-school{background:#1e90ff;color:#fff;border-radius:4px;}
 .icon-well{background:#00ced1;color:#000;border-radius:50%;}
 .icon-quarry{background:#696969;color:#fff;}
 .icon-outpost{
@@ -44,7 +43,6 @@ html,body{height:100%;margin:0;}
   background:white;
   padding:10px;
   font-size:13px;
-  line-height:22px;
   border-radius:6px;
   box-shadow:0 0 10px rgba(0,0,0,0.3);
 }
@@ -52,6 +50,25 @@ html,body{height:100%;margin:0;}
   display:flex;
   align-items:center;
   gap:6px;
+  margin-bottom:4px;
+}
+
+/* =========================
+   POPUP STYLE
+========================= */
+.popup-table{
+  border-collapse:collapse;
+  width:100%;
+}
+.popup-table td{
+  border-bottom:1px solid #ddd;
+  padding:4px;
+  font-size:12px;
+}
+.popup-title{
+  font-weight:bold;
+  margin-bottom:6px;
+  color:#333;
 }
 </style>
 </head>
@@ -71,13 +88,19 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
 }).addTo(map);
 
 /* =========================
-   POPUP
+   POPUP FUNCTION (ALL LAYERS)
 ========================= */
 function popupAttributes(feature, layer){
-  let html="";
-  for(let k in feature.properties){
-    html += "<b>"+k+"</b>: "+feature.properties[k]+"<br>";
+  if(!feature.properties) return;
+
+  let html = '<div class="popup-title">Attributes</div>';
+  html += '<table class="popup-table">';
+
+  for(let key in feature.properties){
+    html += `<tr><td><b>${key}</b></td><td>${feature.properties[key]}</td></tr>`;
   }
+
+  html += '</table>';
   layer.bindPopup(html);
 }
 
@@ -122,65 +145,82 @@ let [
   quarries,natural,wells,clinics,hospitals
 ] = data;
 
+/* Ramallah Boundary */
 var ramallahLayer = L.geoJSON(ramallah,{
-  style:{color:"#000",weight:4,fillOpacity:0}
+  style:{color:"#000",weight:4,fillOpacity:0},
+  onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Built-up */
 var builtLayer = L.geoJSON(built,{
-  style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7}
+  style:{color:"#8B4513",weight:2,fillColor:"#F5F5DC",fillOpacity:0.7},
+  onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Roads */
 var roadsLayer = L.geoJSON(roads,{
-  style:{color:"#4B0082",weight:2}
+  style:{color:"#4B0082",weight:2},
+  onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Schools */
 var schoolsLayer = L.geoJSON(schools,{
   pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("🎓","icon-school")}),
   onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Wells */
 var wellsLayer = L.geoJSON(wells,{
   pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("💧","icon-well")}),
   onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Clinics */
 var clinicsLayer = L.geoJSON(clinics,{
   pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-clinic")}),
   onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Hospitals */
 var hospitalsLayer = L.geoJSON(hospitals,{
   pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("✚","icon-hospital")}),
   onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Quarries */
 var quarriesLayer = L.geoJSON(quarries,{
   pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛏","icon-quarry")}),
   onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Outposts */
 var outpostsLayer = L.geoJSON(outposts,{
   pointToLayer:(f,ll)=>L.marker(ll,{icon:icon("⛺","icon-outpost")}),
   onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Settlements */
 var settlementsLayer = L.geoJSON(settlements,{
-  style:{color:"#ff0000",weight:2}
+  style:{color:"#ff0000",weight:2},
+  onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Military */
 var militaryLayer = L.geoJSON(military,{
-  style:{color:"#800000",weight:2}
+  style:{color:"#800000",weight:2},
+  onEachFeature:popupAttributes
 }).addTo(map);
 
+/* Natural */
 var naturalLayer = L.geoJSON(natural,{
-  style:{color:"#228b22",fillOpacity:0.5}
+  style:{color:"#228b22",fillOpacity:0.5},
+  onEachFeature:popupAttributes
 }).addTo(map);
 
 /* =========================
-   LEGEND CONTROL
+   LEGEND
 ========================= */
 var legend = L.control({position:"bottomright"});
-
 legend.onAdd = function(){
   var div = L.DomUtil.create("div","legend");
   div.innerHTML = `
@@ -194,10 +234,9 @@ legend.onAdd = function(){
   `;
   return div;
 };
-
 legend.addTo(map);
 
-/* Layer control */
+/* Layer Control */
 L.control.layers(null,{
   "Ramallah Boundary":ramallahLayer,
   "Built-up Areas":builtLayer,
