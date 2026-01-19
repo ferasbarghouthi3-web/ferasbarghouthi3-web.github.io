@@ -1,208 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
 <meta charset="utf-8">
-<title>Ramallah Web Map - Schools Proximity</title>
+<title>Web GIS – School Planning DSS</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
+
 <style>
-    body { margin:0; padding:0; }
-    #map { width:100%; height:100vh; }
+body { margin:0; font-family:Arial }
+#map { height:100vh }
+
+.header {
+  position:absolute;
+  top:0; left:0; right:0;
+  background:#1e3d59;
+  color:white;
+  padding:10px;
+  z-index:1000;
+  text-align:center;
+}
+
+.dashboard {
+  position:absolute;
+  bottom:20px;
+  right:20px;
+  background:white;
+  padding:10px;
+  z-index:1000;
+  font-size:13px;
+}
 </style>
 </head>
 
 <body>
+
+<div class="header">
+<h3>Decision Support System لتخطيط المدارس – محافظة رام الله</h3>
+</div>
+
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<div class="dashboard">
+<b>📊 Dashboard</b><br>
+إجمالي التجمعات: <span id="tTotal">0</span><br>
+تجمعات تعاني من نقص: <span id="tDef">0</span><br>
+مواقع مقترحة: <span id="tSites">0</span>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
 
 <script>
-// =====================================================
-// 1) MAP INITIALIZATION
-// =====================================================
-var map = L.map("map").setView([31.9, 35.2], 13);
+// ================= MAP =================
+var map = L.map("map").setView([31.9,35.2],11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { maxZoom: 19 }
-).addTo(map);
+// Pane للتجمعات (تحت)
+map.createPane("tgPane");
+map.getPane("tgPane").style.zIndex = 200;
 
-// =====================================================
-// 1.1) PANES
-// =====================================================
-map.createPane("builtupPane");
-map.getPane("builtupPane").style.zIndex = 400;
-
-map.createPane("wadiPane");
-map.getPane("wadiPane").style.zIndex = 450;
-
-// =====================================================
-// 2) GEOJSON LOADER
-// =====================================================
-function loadGeoJSON(file, options = {}) {
-    return fetch(encodeURI(file))
-    .then(res => {
-        if (!res.ok) throw new Error(file + " not found");
-        return res.json();
-    })
-    .then(data => {
-        return L.geoJSON(data, {
-            pane: options.pane,
-            style: function(feature){
-                if (feature.geometry.type !== "Point" && options.style) {
-                    return options.style;
-                }
-            },
-            pointToLayer: function(feature, latlng){
-                return L.marker(latlng);
-            },
-            onEachFeature: function(feature, layer){
-                let html = "<table>";
-                for (let k in feature.properties){
-                    html += `<tr><td><b>${k}</b></td><td>${feature.properties[k]}</td></tr>`;
-                }
-                html += "</table>";
-                layer.bindPopup(html);
-            }
-        });
-    })
-    .catch(err => {
-        console.warn(err.message);
-        return L.layerGroup();
-    });
-}
-
-// =====================================================
-// 3) LOAD ALL LAYERS
-// =====================================================
+// ================= LOAD DATA =================
 Promise.all([
-    loadGeoJSON("ramallah.json", { style:{ color:"#000", weight:3, fillOpacity:0 } }),
-    loadGeoJSON("built_up.json", { pane:"builtupPane", style:{ color:"#ff7800", weight:1, fillOpacity:0.6 } }),
-    loadGeoJSON("roods.json", { style:{ color:"#0066ff", weight:2 } }),
-    loadGeoJSON("natural.json", { style:{ color:"#2e8b57", fillOpacity:0.4 } }),
-    loadGeoJSON("schools.json"),
-    loadGeoJSON("Wells.geojson"),
-    loadGeoJSON("الودية.geojson", { pane:"wadiPane", style:{ color:"#0000ff", weight:3, opacity:1 } }),
-    loadGeoJSON("البؤر_الاستيطانية.geojson"),
-    loadGeoJSON("العيادات.geojson"),
-    loadGeoJSON("المواقع_العسكرية.geojson"),
-    loadGeoJSON("كسارات.geojson"),
-    loadGeoJSON("مستوطنات.geojson")
-]).then(function(layers){
+ fetch("tgmooat.json").then(r=>r.json()),
+ fetch("Ramallah_Schools.json").then(r=>r.json()),
+ fetch("roads.json").then(r=>r.json()),
+ fetch("built_up.json").then(r=>r.json()),
+ fetch("settlements.geojson").then(r=>r.json()),
+ fetch("outposts.geojson").then(r=>r.json()),
+ fetch("military.geojson").then(r=>r.json()),
+ fetch("wadis.geojson").then(r=>r.json()),
+ fetch("quarries.geojson").then(r=>r.json()),
+ fetch("natural.json").then(r=>r.json()),
+ fetch("Wells.geojson").then(r=>r.json()),
+ fetch("clinics.geojson").then(r=>r.json()),
+ fetch("hospitals.geojson").then(r=>r.json())
+]).then(init);
 
-    // =========================
-    // Add all layers to map
-    // =========================
-    var overlays = {
-        "Ramallah Boundary": layers[0].addTo(map),
-        "Built-up Areas": layers[1].addTo(map),
-        "Road Network": layers[2].addTo(map),
-        "Natural Areas": layers[3].addTo(map),
-        "Schools": layers[4].addTo(map),
-        "Wells": layers[5].addTo(map),
-        "الأودية": layers[6].addTo(map),
-        "البؤر الاستيطانية": layers[7].addTo(map),
-        "العيادات": layers[8].addTo(map),
-        "المواقع العسكرية": layers[9].addTo(map),
-        "كسارات": layers[10].addTo(map),
-        "مستوطنات": layers[11].addTo(map)
-    };
-    L.control.layers(null, overlays).addTo(map);
+// ================= INIT =================
+function init(d){
 
-    map.fitBounds(layers[0].getBounds());
+let [tg,schools,roads,built,sett,outp,mil,wad,qua,nat,wells,clin,hosp] = d;
 
-    // =====================================================
-    // 4) PROXIMITY ANALYSIS FOR SCHOOLS WITH LINES
-    // =====================================================
-    var schoolsLayer = layers[4];
-    var roadsLayer = layers[2];
-    var dangerLayer = L.featureGroup([layers[7], layers[11], layers[9]]);
-    var naturalLayer = L.featureGroup([layers[3], layers[6]]);
-    var clinicsLayer = layers[8];
+let deficitCount=0, siteCount=0;
 
-    schoolsLayer.eachLayer(function(schoolMarker){
-        var schoolPoint = schoolMarker.feature;
+// ===== DISPLAY ALL LAYERS =====
+L.geoJSON(built,{style:{color:"#999",fillOpacity:0.3}}).addTo(map);
+L.geoJSON(roads,{style:{color:"orange"}}).addTo(map);
+L.geoJSON(sett,{style:{color:"red",fillOpacity:0.4}}).addTo(map);
+L.geoJSON(outp,{style:{color:"darkred"}}).addTo(map);
+L.geoJSON(mil,{style:{color:"black"}}).addTo(map);
+L.geoJSON(wad,{style:{color:"blue"}}).addTo(map);
+L.geoJSON(qua,{style:{color:"brown"}}).addTo(map);
+L.geoJSON(nat,{style:{color:"green"}}).addTo(map);
 
-        // ----------------------------
-        // Helper function: find closest feature and return its coordinates
-        // ----------------------------
-        function findClosest(layerGroup, pointFeature, isLine=false){
-            var minDist = Infinity;
-            var closestCoord = null;
-
-            layerGroup.eachLayer(function(l){
-                var dist;
-                if(isLine){
-                    dist = turf.pointToLineDistance(pointFeature, l.feature, {units:'meters'});
-                    // لإيجاد أقرب نقطة على الخط
-                    var snapped = turf.nearestPointOnLine(l.feature, pointFeature);
-                    var coords = snapped.geometry.coordinates;
-                    if(dist < minDist){
-                        minDist = dist;
-                        closestCoord = coords;
-                    }
-                } else {
-                    dist = turf.distance(pointFeature, l.feature, {units:'meters'});
-                    var coords = l.feature.geometry.coordinates;
-                    if(dist < minDist){
-                        minDist = dist;
-                        closestCoord = coords;
-                        minDist = dist;
-                    }
-                }
-            });
-            return {distance: minDist, coord: closestCoord};
-        }
-
-        // أقرب شارع
-        var street = findClosest(roadsLayer, schoolPoint, true);
-        // أقرب خطر
-        var danger = findClosest(dangerLayer, schoolPoint);
-        // أقرب طبيعة
-        var natural = findClosest(naturalLayer, schoolPoint);
-        // أقرب مركز صحي
-        var clinic = findClosest(clinicsLayer, schoolPoint);
-
-        // ----------------------------
-        // حفظ الخصائص
-        // ----------------------------
-        schoolMarker.feature.properties.distanceToStreet = street.distance.toFixed(2) + " m";
-        schoolMarker.feature.properties.distanceToDanger = danger.distance.toFixed(2) + " m";
-        schoolMarker.feature.properties.distanceToNatural = natural.distance.toFixed(2) + " m";
-        schoolMarker.feature.properties.distanceToClinic = clinic.distance.toFixed(2) + " m";
-
-        // ----------------------------
-        // تحديث Popup
-        // ----------------------------
-        let html = "<table>";
-        for (let k in schoolMarker.feature.properties){
-            html += `<tr><td><b>${k}</b></td><td>${schoolMarker.feature.properties[k]}</td></tr>`;
-        }
-        html += "</table>";
-        schoolMarker.bindPopup(html);
-
-        // ----------------------------
-        // رسم خطوط توضيحية
-        // ----------------------------
-        function drawLine(coord, color){
-            if(coord){
-                L.polyline([
-                    [schoolPoint.geometry.coordinates[1], schoolPoint.geometry.coordinates[0]],
-                    [coord[1], coord[0]]
-                ], {color: color, weight:2, dashArray:'5,5'}).addTo(map);
-            }
-        }
-
-        drawLine(street.coord, "#ff6600");    // برتقالي = شارع
-        drawLine(danger.coord, "#ff0000");    // أحمر = خطر
-        drawLine(natural.coord, "#00cc00");   // أخضر = طبيعة
-        drawLine(clinic.coord, "#0000ff");    // أزرق = مركز صحي
-
-    });
-
+[wells,clin,hosp].forEach(g=>{
+ L.geoJSON(g,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:4})}).addTo(map);
 });
+
+L.geoJSON(schools,{
+ pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:5,color:"blue"})
+}).addTo(map);
+
+// ===== SEARCH =====
+L.Control.geocoder({defaultMarkGeocode:false})
+.on("markgeocode",e=>map.fitBounds(e.geocode.bbox))
+.addTo(map);
+
+// ===== MAIN ANALYSIS =====
+let tgLayer = L.geoJSON(tg,{
+ pane:"tgPane",
+ style:f=>{
+   let pop=f.properties["تقديرات_السكان_2020"]||0;
+   let need=Math.ceil(pop/3000);
+   let cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
+   let diff=need-cnt;
+   let c= diff>=2?"red": diff==1?"orange":"green";
+   return {color:"black",fillOpacity:0.3,fillColor:c};
+ },
+ onEachFeature:(f,l)=>{
+   let pop=f.properties["تقديرات_السكان_2020"]||0;
+   let need=Math.ceil(pop/3000);
+   let cnt=schools.features.filter(s=>turf.booleanPointInPolygon(s,f)).length;
+   let deficit=cnt<need;
+   if(deficit) deficitCount++;
+
+   let html=`<b>${f.properties["اسم_التجمع"]}</b><br>
+   السكان: ${pop}<br>
+   المدارس: ${cnt}<br>
+   المطلوب: ${need}<br>
+   الحالة: ${deficit?"نقص":"مكتفي"}`;
+
+   if(deficit){
+     let c=turf.centroid(f);
+     let farSet=[sett,outp].every(g=>g.features.every(s=>turf.distance(c,s,{units:"km"})>0.8));
+     let safe=[mil,wad,qua,nat].every(g=>g.features.every(x=>!turf.booleanPointInPolygon(c,x)));
+     let insideBuilt=turf.booleanPointInPolygon(c,built);
+     let nearRoad=roads.features.some(r=>turf.distance(c,r,{units:"km"})<0.5);
+     let nearServ=[wells,clin,hosp].some(g=>g.features.some(x=>turf.distance(c,x,{units:"km"})<1));
+
+     let score=(insideBuilt?25:0)+(nearRoad?20:0)+(farSet?25:0)+(safe?20:0)+(nearServ?10:0);
+     let price=100+(insideBuilt?30:0)+(nearRoad?20:0)+(nearServ?20:0)+(score>=70?20:0)-(farSet?0:50);
+
+     L.marker([c.geometry.coordinates[1],c.geometry.coordinates[0]])
+      .addTo(map)
+      .bindPopup(موقع مقترح<br>Score: ${score}/100<br>السعر: ${price}$);
+     siteCount++;
+
+     html+=<hr>Score: ${score}/100<br>السعر: ${price}$;
+   }
+   l.bindPopup(html);
+ }
+}).addTo(map);
+
+// ===== DASHBOARD =====
+document.getElementById("tTotal").innerText=tg.features.length;
+document.getElementById("tDef").innerText=deficitCount;
+document.getElementById("tSites").innerText=siteCount;
+
+map.fitBounds(tgLayer.getBounds());
+}
 </script>
 </body>
 </html>
-
