@@ -163,33 +163,6 @@ var settlementsLayer=L.geoJSON(settlements,{style:{color:"#ff0000",weight:2},onE
 var militaryLayer=L.geoJSON(military,{style:{color:"#800000",weight:2},onEachFeature:popupAttributes}).addTo(map);
 var naturalLayer=L.geoJSON(natural,{style:{color:"#228b22",fillOpacity:0.5},onEachFeature:popupAttributes}).addTo(map);
 
-/* PROPOSED SCHOOLS LAYER BASED ON FACTORS */
-var proposedSchoolsLayer = L.geoJSON([], {
-  onEachFeature: popupAttributes,
-  pointToLayer: function (feature, latlng) {
-    return L.marker(latlng, { icon: icon("🏫", "icon-school") });
-  }
-}).addTo(map);
-
-// Example of adding proposed schools data (you will need to calculate actual data based on your criteria)
-proposedSchoolsLayer.addData({
-  "type": "Feature",
-  "properties": { "name": "Proposed School 1", "reason": "High population density and proximity to health clinics." },
-  "geometry": {
-    "type": "Point",
-    "coordinates": [35.215, 31.905]
-  }
-});
-
-proposedSchoolsLayer.addData({
-  "type": "Feature",
-  "properties": { "name": "Proposed School 2", "reason": "Low proximity to existing schools and high demand from local population." },
-  "geometry": {
-    "type": "Point",
-    "coordinates": [35.210, 31.915]
-  }
-});
-
 /* ORDER */
 areaALayer.bringToBack();
 areaBLayer.bringToBack();
@@ -212,8 +185,7 @@ L.control.layers(null,{
   "Outposts":outpostsLayer,
   "Settlements":settlementsLayer,
   "Military Sites":militaryLayer,
-  "Natural Areas":naturalLayer,
-  "Proposed Schools":proposedSchoolsLayer
+  "Natural Areas":naturalLayer
 },{collapsed:false}).addTo(map);
 
 /* LEGEND */
@@ -232,13 +204,12 @@ legend.onAdd=function(){
     <div class="legend-item"><div class="icon icon-well">💧</div>Wells</div>
     <div class="legend-item"><div class="icon icon-quarry">⛏</div>Quarries</div>
     <div class="legend-item"><div class="icon icon-outpost">⛺</div>Outposts</div>
-    <hr>
-    <div class="legend-item"><div class="icon icon-school">🏫</div>Proposed Schools</div>
   `;
   return div;
 };
 legend.addTo(map);
 
+}
 </script>
 </body>
 </html>
